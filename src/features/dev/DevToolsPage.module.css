@@ -1,0 +1,105 @@
+.page {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.head {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.stack {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.fields {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.seedField {
+  grid-column: 1 / -1;
+}
+
+/* Scrolling wrapper around the TerminalBlock so the newest line stays in view. */
+.logScroll {
+  max-height: 40vh;
+  min-height: 120px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--bg);
+  scroll-behavior: smooth;
+}
+
+.logBlock {
+  min-height: 120px;
+}
+
+.resetGrid {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.resetItem {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--bg);
+  border: 1px solid var(--line-dim);
+  border-left: 2px solid var(--loss);
+}
+
+.resetItem p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.dialogStack {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.dialogStack p {
+  margin: 0;
+}
+
+.muted {
+  color: var(--text-muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+@media (min-width: 640px) {
+  .fields {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .seedField {
+    grid-column: auto;
+  }
+
+  .resetGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logScroll {
+    scroll-behavior: auto;
+  }
+}

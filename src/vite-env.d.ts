@@ -11,6 +11,7 @@ interface ImportMetaEnv {
   readonly VITE_FB_APP_ID: string;
   readonly VITE_ADMIN_UIDS?: string;
   readonly VITE_USE_EMULATORS?: string;
+  readonly VITE_APP_VERSION?: string;
 }
 
 declare module '*.module.css' {

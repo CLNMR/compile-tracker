@@ -2,6 +2,7 @@ import { lazy, Suspense, type ReactNode } from 'react';
 import { createBrowserRouter, Outlet } from 'react-router';
 import { AppShell, Spinner } from '@/components/ui';
 import { RouteError } from '@/app/RouteError';
+import { EmulatorBanner } from '@/features/dev/EmulatorBanner';
 
 const HomePage = lazy(() => import('@/features/home/HomePage'));
 const PlayersPage = lazy(() => import('@/features/players/PlayersPage'));
@@ -17,7 +18,7 @@ const page = (el: ReactNode) => <Suspense fallback={<Spinner />}>{el}</Suspense>
 
 function Layout() {
   return (
-    <AppShell>
+    <AppShell banner={<EmulatorBanner />}>
       <Outlet />
     </AppShell>
   );

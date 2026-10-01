@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { IconChart, IconHome, IconList, IconPlus, IconSettings, type IconProps } from './icons';
+import { IconChart, IconHome, IconList, IconPlus, IconSettings, IconUser, type IconProps } from './icons';
 
 export interface NavItem {
   to: string;
@@ -14,5 +14,6 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/games/new', label: 'New game', icon: IconPlus },
   { to: '/games', label: 'Games', icon: IconList, end: true },
   { to: '/stats', label: 'Stats', icon: IconChart },
+  { to: '/players', label: 'Players', icon: IconUser },
   { to: '/settings', label: 'Settings', icon: IconSettings },
 ];

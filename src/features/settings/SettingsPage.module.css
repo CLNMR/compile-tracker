@@ -1,0 +1,127 @@
+.page {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.stack {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.setList {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.setRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px dashed var(--line-dim);
+}
+
+.setRow:last-child {
+  border-bottom: 0;
+}
+
+.setLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.summary {
+  display: grid;
+  gap: 2px;
+  margin-top: var(--space-2);
+}
+
+.uidRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.uid {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--line-dim);
+  padding: 6px 10px;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
+.hint {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.hint code {
+  color: var(--text-muted);
+  background: var(--bg);
+  padding: 0 4px;
+}
+
+.counts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.count {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg);
+  border: 1px solid var(--line-dim);
+  border-left: 2px solid var(--line);
+  min-width: 0;
+}
+
+.countValue {
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 1.1;
+  color: var(--text);
+}
+
+.countLabel {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+.about {
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+@media (min-width: 640px) {
+  .uid {
+    font-size: 13px;
+  }
+}

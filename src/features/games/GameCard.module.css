@@ -1,0 +1,144 @@
+.root {
+  position: relative;
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  color: var(--text);
+  background: var(--bg-elev);
+  border: 1px solid var(--line-dim);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  text-decoration: none;
+  min-width: 0;
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+
+.root:hover {
+  text-decoration: none;
+  border-color: var(--line);
+  background: var(--bg-elev-2);
+}
+
+.root:active {
+  transform: translateY(1px);
+}
+
+.root:focus-visible {
+  outline-offset: -3px;
+  box-shadow: none;
+}
+
+.dense {
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+}
+
+/* ---- head ---- */
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.date {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.badges {
+  display: inline-flex;
+  gap: 6px;
+  flex: none;
+}
+
+/* ---- sides ---- */
+.sides {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: 1fr;
+  min-width: 0;
+}
+
+.vs {
+  justify-self: center;
+  font-family: var(--font-display);
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.side {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+  min-width: 0;
+  border: 1px solid transparent;
+  border-left: 2px solid var(--line-dim);
+  background: rgba(13, 10, 19, 0.5);
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+.won {
+  border-color: rgba(125, 240, 194, 0.35);
+  border-left-color: var(--win);
+  background: linear-gradient(90deg, var(--win-soft), rgba(13, 10, 19, 0.5) 70%);
+  box-shadow: inset 0 0 18px rgba(125, 240, 194, 0.08);
+}
+
+.sideHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.name {
+  font-weight: 600;
+  font-size: 14px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nameWon {
+  color: var(--win);
+  text-shadow: 0 0 10px rgba(125, 240, 194, 0.35);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.dense .side {
+  padding: 6px 8px;
+}
+
+.dense .name {
+  font-size: 13px;
+}
+
+@media (min-width: 640px) {
+  .sides {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .vs {
+    align-self: center;
+    writing-mode: vertical-rl;
+    letter-spacing: 0.4em;
+  }
+}
