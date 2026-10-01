@@ -7,18 +7,20 @@ import { useGames } from '@/hooks/useGames';
 import { useInstallPrompt } from '@/hooks/useInstallPrompt';
 import { usePlayers } from '@/hooks/usePlayers';
 import { useSettings } from '@/hooks/useSettings';
+import { isLocale, localeFromBrowser, useLocaleStore, useT } from '@/i18n';
 import type { SetId } from '@/types';
 import s from './SettingsPage.module.css';
 
 const APP_VERSION = (import.meta.env.VITE_APP_VERSION as string | undefined) ?? '0.1.0';
 const MIN_PROTOCOLS = 6;
 
-/** /settings — protocol sets, default player, account, install, data, about. */
+/** /settings — protocol sets, default player, language, account, install, data, about. */
 export default function SettingsPage() {
   return (
     <div className={s.page}>
       <ProtocolSetsPanel />
       <MePanel />
+      <LanguagePanel />
       <AccountPanel />
       <InstallPanel />
       <DataPanel />
@@ -28,6 +30,7 @@ export default function SettingsPage() {
 }
 
 function ProtocolSetsPanel() {
+  const { t, setName } = useT();
   const { enabledSets, setEnabledSets } = useSettings();
   const toast = useToast();
   const enabledCount = protocolsInSets(enabledSets).length;
@@ -38,14 +41,14 @@ function ProtocolSetsPanel() {
       return;
     }
     if (enabledSets.length <= 1) {
-      toast.push({ title: 'At least one set must stay enabled', tone: 'warn' });
+      toast.push({ title: t('settings.protocolSets.atLeastOne'), tone: 'warn' });
       return;
     }
     void setEnabledSets(enabledSets.filter((x) => x !== id));
   };
 
   return (
-    <Panel title="Protocol sets" headerRight={<Badge mono>{enabledCount} protocols</Badge>}>
+    <Panel title={t('settings.protocolSets.title')} headerRight={<Badge mono>{t('settings.protocolSets.protocolCount', { count: enabledCount })}</Badge>}>
       <div className={s.setList}>
         {SETS.map((set) => {
           const count = protocolsInSets([set.id]).length;
@@ -56,11 +59,11 @@ function ProtocolSetsPanel() {
                 onChange={(on) => toggle(set.id, on)}
                 label={
                   <span className={s.setLabel}>
-                    {set.name}
-                    <Badge tone={set.kind === 'main' ? 'accent' : 'default'}>{set.kind}</Badge>
+                    {setName(set)}
+                    <Badge tone={set.kind === 'main' ? 'accent' : 'default'}>{t(`common.setKind.${set.kind}`)}</Badge>
                   </span>
                 }
-                description={`${set.year} · ${count} protocol${count === 1 ? '' : 's'}`}
+                description={`${set.year} · ${t('settings.protocolSets.protocolCount', { count })}`}
               />
             </div>
           );
@@ -68,11 +71,11 @@ function ProtocolSetsPanel() {
       </div>
       <div className={s.summary}>
         <TerminalLine tone="muted">
-          {enabledCount} protocol{enabledCount === 1 ? '' : 's'} enabled across {enabledSets.length} set{enabledSets.length === 1 ? '' : 's'}
+          {t('settings.protocolSets.enabled', { count: enabledCount })} {t('settings.protocolSets.across', { count: enabledSets.length })}
         </TerminalLine>
         {enabledCount < MIN_PROTOCOLS ? (
           <TerminalLine tone="warn" prompt="!">
-            a game needs {MIN_PROTOCOLS} distinct protocols — enable more sets to record games
+            {t('settings.protocolSets.needMore', { min: MIN_PROTOCOLS })}
           </TerminalLine>
         ) : null}
       </div>
@@ -81,28 +84,61 @@ function ProtocolSetsPanel() {
 }
 
 function MePanel() {
+  const { t } = useT();
   const { players } = usePlayers();
   const { defaultPlayerId, setDefaultPlayerId } = useSettings();
   const active = useMemo(() => players.filter((p) => !p.archived), [players]);
-  const options = [{ value: '', label: 'No default' }, ...active.map((p) => ({ value: p.id, label: p.name }))];
+  const options = [{ value: '', label: t('settings.me.noDefault') }, ...active.map((p) => ({ value: p.id, label: p.name }))];
   // A default pointing at an archived/deleted player falls back to "No default" in the control.
   const value = active.some((p) => p.id === defaultPlayerId) ? (defaultPlayerId ?? '') : '';
 
   return (
-    <Panel title="Me">
+    <Panel title={t('settings.me.title')}>
       <Select
-        label="Default player"
+        label={t('settings.me.defaultPlayer')}
         value={value}
         onChange={(v) => void setDefaultPlayerId(v || undefined)}
         options={options}
-        hint={active.length ? 'Pre-selected as Player 1 when recording a game.' : 'Add players first — they appear here.'}
+        hint={active.length ? t('settings.me.hintActive') : t('settings.me.hintEmpty')}
         disabled={active.length === 0}
       />
     </Panel>
   );
 }
 
+/** Per-device language choice (localStorage via the locale store); '' means "follow the browser". */
+function LanguagePanel() {
+  const { t } = useT();
+  const locale = useLocaleStore((st) => st.locale);
+  const explicit = useLocaleStore((st) => st.explicit);
+  const setLocale = useLocaleStore((st) => st.setLocale);
+  const resetToBrowser = useLocaleStore((st) => st.resetToBrowser);
+  const browser = localeFromBrowser();
+
+  const options = [
+    { value: '', label: t('common.language.auto', { name: t(`common.language.${browser}`) }) },
+    { value: 'en', label: t('common.language.en') },
+    { value: 'de', label: t('common.language.de') },
+  ];
+
+  return (
+    <Panel title={t('common.language.label')}>
+      <div className={s.stack}>
+        <Select
+          label={t('common.language.label')}
+          value={explicit ? locale : ''}
+          onChange={(v) => (isLocale(v) ? setLocale(v) : resetToBrowser())}
+          options={options}
+          hint={t('settings.language.hint')}
+        />
+        <TerminalLine tone="muted">{t('settings.language.status', { locale, browser })}</TerminalLine>
+      </div>
+    </Panel>
+  );
+}
+
 function AccountPanel() {
+  const { t } = useT();
   const { user, uid, isAnonymous, linkGoogle, switchToExistingGoogle, switchRequest, clearSwitchRequest, redirectNotice, clearRedirectNotice, signOut } =
     useAuth();
   const toast = useToast();
@@ -125,15 +161,15 @@ function AccountPanel() {
     try {
       const res = await linkGoogle();
       if (res.ok) {
-        toast.push({ title: 'Google account linked', description: 'Your data now follows your Google sign-in.', tone: 'win' });
+        toast.push({ title: t('auth.linked.title'), description: t('auth.linked.description'), tone: 'win' });
         return;
       }
       if (res.reason === 'switch-required') return; // store set switchRequest → dialog below opens
       if (res.reason === 'redirecting') {
-        toast.push({ title: 'Redirecting to Google…', tone: 'default' });
+        toast.push({ title: t('settings.account.toast.redirecting'), tone: 'default' });
         return;
       }
-      if (res.reason === 'error') toast.push({ title: 'Could not link account', description: `${res.message} (${res.code})`, tone: 'loss', durationMs: 8000 });
+      if (res.reason === 'error') toast.push({ title: t('auth.linkFailed.title'), description: `${res.message} (${res.code})`, tone: 'loss', durationMs: 8000 });
     } finally {
       setLinking(false);
     }
@@ -143,9 +179,9 @@ function AccountPanel() {
     setSwitching(true);
     try {
       await switchToExistingGoogle();
-      toast.push({ title: 'Switched to your Google account', tone: 'win' });
+      toast.push({ title: t('settings.account.toast.switched'), tone: 'win' });
     } catch (e) {
-      toast.push({ title: 'Could not switch account', description: (e as Error).message, tone: 'loss' });
+      toast.push({ title: t('settings.account.toast.switchFailed'), description: (e as Error).message, tone: 'loss' });
     } finally {
       setSwitching(false);
     }
@@ -156,9 +192,9 @@ function AccountPanel() {
     try {
       await signOut();
       setConfirmSignOut(false);
-      toast.push({ title: 'Signed out', description: 'A fresh anonymous identity was created.', tone: 'default' });
+      toast.push({ title: t('settings.account.toast.signedOut'), description: t('settings.account.toast.signedOutDesc'), tone: 'default' });
     } catch (e) {
-      toast.push({ title: 'Sign-out failed', description: (e as Error).message, tone: 'loss' });
+      toast.push({ title: t('settings.account.toast.signOutFailed'), description: (e as Error).message, tone: 'loss' });
     } finally {
       setSigningOut(false);
     }
@@ -168,40 +204,48 @@ function AccountPanel() {
     if (!uid) return;
     try {
       await navigator.clipboard.writeText(uid);
-      toast.push({ title: 'uid copied', tone: 'win' });
+      toast.push({ title: t('settings.account.toast.uidCopied'), tone: 'win' });
     } catch {
-      toast.push({ title: 'Clipboard unavailable', description: 'Select the id and copy it manually.', tone: 'warn' });
+      toast.push({ title: t('settings.account.toast.clipboard'), description: t('settings.account.toast.clipboardDesc'), tone: 'warn' });
     }
   };
 
   return (
-    <Panel title="Account" headerRight={<Badge tone={isAnonymous ? 'warn' : 'win'} dot>{isAnonymous ? 'anonymous' : 'google'}</Badge>}>
+    <Panel
+      title={t('settings.account.title')}
+      headerRight={
+        <Badge tone={isAnonymous ? 'warn' : 'win'} dot>
+          {isAnonymous ? t('settings.account.anonymous') : t('settings.account.google')}
+        </Badge>
+      }
+    >
       <div className={s.stack}>
         {isAnonymous ? (
-          <TerminalLine tone="muted">identity: anonymous — data is bound to this device</TerminalLine>
+          <TerminalLine tone="muted">{t('settings.account.identityAnonymous')}</TerminalLine>
         ) : (
           <TerminalLine tone="win" prompt="✓">
-            identity: google{googleEmail ? ` — ${googleEmail}` : ''}
+            {t('settings.account.identityGoogle')}
+            {googleEmail ? ` — ${googleEmail}` : ''}
           </TerminalLine>
         )}
 
         <div className={s.row}>
           {isAnonymous ? (
             <Button onClick={() => void onLink()} loading={linking}>
-              Link Google account
+              {t('settings.account.linkGoogle')}
             </Button>
           ) : null}
           <Button variant="ghost" onClick={() => setConfirmSignOut(true)}>
-            Sign out
+            {t('settings.account.signOut')}
           </Button>
         </div>
 
         <div className={s.uidRow}>
-          <code className={s.uid} title="Your user id">
+          <code className={s.uid} title={t('settings.account.uidTitle')}>
             {uid ?? '—'}
           </code>
           <Button size="sm" variant="subtle" onClick={() => void copyUid()} disabled={!uid}>
-            Copy
+            {t('common.actions.copy')}
           </Button>
         </div>
       </div>
@@ -210,34 +254,31 @@ function AccountPanel() {
         open={switchRequest != null}
         onClose={() => (switching ? undefined : clearSwitchRequest())}
         onConfirm={onSwitch}
-        title="Google account already in use"
-        confirmLabel="Switch to that account"
+        title={t('settings.account.switchDialog.title')}
+        confirmLabel={t('settings.account.switchDialog.confirm')}
         loading={switching}
       >
-        {switchRequest?.email ? <code>{switchRequest.email}</code> : 'This Google account'} already has Compile Tracker data under another identity. You
-        can switch to it now — the games and players recorded under your current anonymous identity stay behind on this device's old identity and
-        will not be merged.
-        {switchRequest && !switchRequest.credential ? ' Google will ask you to confirm the account once more.' : ''}
+        {switchRequest?.email ? <code>{switchRequest.email}</code> : t('settings.account.switchDialog.thisAccount')} {t('settings.account.switchDialog.body')}
+        {switchRequest && !switchRequest.credential ? ` ${t('settings.account.switchDialog.reconfirm')}` : ''}
       </ConfirmDialog>
 
       <ConfirmDialog
         open={confirmSignOut}
         onClose={() => (signingOut ? undefined : setConfirmSignOut(false))}
         onConfirm={onSignOut}
-        title="Sign out?"
-        confirmLabel="Sign out"
+        title={t('settings.account.signOutDialog.title')}
+        confirmLabel={t('settings.account.signOutDialog.confirm')}
         danger={isAnonymous}
         loading={signingOut}
       >
-        {isAnonymous
-          ? 'You are anonymous. Signing out creates a new anonymous identity, and the data bound to this one becomes unreachable unless you link a Google account first.'
-          : 'A new anonymous identity is created for this device. Sign in with Google again to get back to your data.'}
+        {isAnonymous ? t('settings.account.signOutDialog.anonymousBody') : t('settings.account.signOutDialog.googleBody')}
       </ConfirmDialog>
     </Panel>
   );
 }
 
 function InstallPanel() {
+  const { t } = useT();
   const { canInstall, installed, ios, install } = useInstallPrompt();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
@@ -246,32 +287,32 @@ function InstallPanel() {
     setBusy(true);
     try {
       const outcome = await install();
-      if (outcome === 'accepted') toast.push({ title: 'Installing…', tone: 'win' });
+      if (outcome === 'accepted') toast.push({ title: t('settings.install.installing'), tone: 'win' });
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Panel title="Install">
+    <Panel title={t('settings.install.title')}>
       <div className={s.stack}>
         {installed ? (
           <TerminalLine tone="win" prompt="✓">
-            running as installed app
+            {t('settings.install.running')}
           </TerminalLine>
         ) : canInstall ? (
           <>
-            <TerminalLine tone="muted">install for offline use and a home-screen icon</TerminalLine>
+            <TerminalLine tone="muted">{t('settings.install.offer')}</TerminalLine>
             <div>
               <Button onClick={() => void onInstall()} loading={busy}>
-                Install app
+                {t('settings.install.button')}
               </Button>
             </div>
           </>
         ) : ios ? (
-          <TerminalLine tone="muted">on iOS: tap Share → "Add to Home Screen"</TerminalLine>
+          <TerminalLine tone="muted">{t('settings.install.ios')}</TerminalLine>
         ) : (
-          <TerminalLine tone="muted">install from your browser menu ("Install app" / "Add to Home screen")</TerminalLine>
+          <TerminalLine tone="muted">{t('settings.install.browser')}</TerminalLine>
         )}
       </div>
     </Panel>
@@ -279,26 +320,27 @@ function InstallPanel() {
 }
 
 function DataPanel() {
+  const { t } = useT();
   const { uid, isAdmin } = useAuth();
   const { games } = useGames('all');
   const { players } = usePlayers();
   const mine = useMemo(() => games.filter((g) => g.ownerUid === uid).length, [games, uid]);
 
   return (
-    <Panel title="Data">
+    <Panel title={t('settings.data.title')}>
       <div className={s.stack}>
         <div className={s.counts}>
-          <Count label="my games" value={mine} />
-          <Count label="my players" value={players.length} />
-          <Count label="games in db" value={games.length} />
+          <Count label={t('settings.data.myGames')} value={mine} />
+          <Count label={t('settings.data.myPlayers')} value={players.length} />
+          <Count label={t('settings.data.gamesInDb')} value={games.length} />
         </div>
         {isAdmin ? (
           <div className={s.row}>
             <Button variant="ghost" to="/dev">
-              Developer tools
+              {t('settings.data.devTools')}
             </Button>
             <Button variant="subtle" to="/dev/ui">
-              UI kitchen sink
+              {t('settings.data.kitchenSink')}
             </Button>
           </div>
         ) : null}
@@ -308,23 +350,22 @@ function DataPanel() {
 }
 
 function Count({ label, value }: { label: string; value: number }) {
+  const { number } = useT();
   return (
     <div className={s.count}>
-      <span className={s.countValue}>{value.toLocaleString()}</span>
+      <span className={s.countValue}>{number(value)}</span>
       <span className={s.countLabel}>{label}</span>
     </div>
   );
 }
 
 function AboutPanel() {
+  const { t } = useT();
   return (
-    <Panel title="About" headerRight={<Badge mono>v{APP_VERSION}</Badge>}>
+    <Panel title={t('settings.about.title')} headerRight={<Badge mono>v{APP_VERSION}</Badge>}>
       <div className={s.stack}>
-        <TerminalLine tone="muted">compile tracker · version {APP_VERSION}</TerminalLine>
-        <p className={s.about}>
-          Compile is a game by Michael Yang, published by Greater Than Games. This is an unofficial fan tool and is not affiliated with or endorsed
-          by either.
-        </p>
+        <TerminalLine tone="muted">{t('settings.about.version', { version: APP_VERSION })}</TerminalLine>
+        <p className={s.about}>{t('settings.about.attribution')}</p>
       </div>
     </Panel>
   );

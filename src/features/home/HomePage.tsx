@@ -21,6 +21,7 @@ import { ProtocolChip } from '@/components/protocol';
 import { useAuth, useUid } from '@/hooks/useAuth';
 import { usePlayerLabel, usePlayers } from '@/hooks/usePlayers';
 import { useSettings } from '@/hooks/useSettings';
+import { useT } from '@/i18n';
 import { playerRecords, protocolUsage, useStats } from '@/stats';
 import { GameCard } from '@/features/games/GameCard';
 import { readStorage, writeStorage } from '@/features/games/gameUtils';
@@ -30,6 +31,7 @@ import s from './HomePage.module.css';
 const HINT_KEY = 'compile.hint.linkAccount.dismissed';
 
 export default function HomePage() {
+  const { t, number, percent } = useT();
   const uid = useUid();
   const { isAnonymous } = useAuth();
   const { players, loading: playersLoading } = usePlayers();
@@ -65,16 +67,16 @@ export default function HomePage() {
       <header className={s.hero}>
         <Wordmark size="lg" glitch />
         <div className={s.heroLines}>
-          <TerminalLine tone="muted">solve for sentience.</TerminalLine>
-          <TerminalLine tone="muted">six protocols. two players. one compile.</TerminalLine>
-          <TerminalLine cursor>awaiting input</TerminalLine>
+          <TerminalLine tone="muted">{t('home.hero.tagline1')}</TerminalLine>
+          <TerminalLine tone="muted">{t('home.hero.tagline2')}</TerminalLine>
+          <TerminalLine cursor>{t('home.hero.awaiting')}</TerminalLine>
         </div>
         <div className={s.cta}>
           <Button size="lg" to="/games/new" iconLeft={<IconPlus />}>
-            New game
+            {t('home.actions.newGame')}
           </Button>
           <Button size="lg" variant="ghost" to="/players" iconLeft={<IconUser />}>
-            Players
+            {t('home.actions.players')}
           </Button>
         </div>
         <BinaryStrip length={40} seed={5} className={s.bits} />
@@ -83,9 +85,11 @@ export default function HomePage() {
       {showHint ? (
         <div className={s.hint} role="status">
           <TerminalLine tone="warn" prompt="!">
-            you are anonymous — link a Google account in <Link to="/settings">Settings</Link> to keep your data across devices.
+            {t('home.hint.anonymousBefore')}
+            <Link to="/settings">{t('home.hint.anonymousLink')}</Link>
+            {t('home.hint.anonymousAfter')}
           </TerminalLine>
-          <button type="button" className={s.hintClose} onClick={dismissHint} aria-label="Dismiss hint">
+          <button type="button" className={s.hintClose} onClick={dismissHint} aria-label={t('home.hint.dismiss')}>
             <IconX size={14} />
           </button>
         </div>
@@ -100,48 +104,48 @@ export default function HomePage() {
       ) : players.length === 0 && games.length === 0 ? (
         <EmptyState
           icon={<IconUser />}
-          title="System idle"
-          lines={['no players registered.', { text: 'add yourself and an opponent, then compile your first game.', tone: 'muted' }]}
+          title={t('home.empty.idle.title')}
+          lines={[t('home.empty.idle.line1'), { text: t('home.empty.idle.line2'), tone: 'muted' }]}
           action={
             <Button to="/players" iconLeft={<IconPlus />}>
-              Create players
+              {t('home.actions.createPlayers')}
             </Button>
           }
         />
       ) : games.length === 0 ? (
         <EmptyState
           icon={<IconList />}
-          title="No games yet"
-          lines={[`${players.length} player${players.length === 1 ? '' : 's'} ready.`, { text: 'record your first match to unlock stats.', tone: 'muted' }]}
+          title={t('home.empty.noGames.title')}
+          lines={[t('home.empty.noGames.ready', { count: players.length }), { text: t('home.empty.noGames.line2'), tone: 'muted' }]}
           action={
             <Button to="/games/new" iconLeft={<IconPlus />}>
-              New game
+              {t('home.actions.newGame')}
             </Button>
           }
         />
       ) : (
         <>
           <div className={s.tiles}>
-            <StatTile label="Games recorded" value={games.length} sub={`${thisMonth} this month`} />
+            <StatTile label={t('home.tiles.gamesRecorded')} value={number(games.length)} sub={t('home.tiles.thisMonth', { count: thisMonth })} />
             <StatTile
-              label={me ? `Win rate · ${label(me.playerId)}` : 'Win rate'}
-              value={me && me.games > 0 ? `${Math.round(me.rate * 100)}%` : '—'}
-              sub={me && me.games > 0 ? `${me.wins} W · ${me.losses} L` : 'set a default player'}
+              label={me ? t('home.tiles.winRateFor', { name: label(me.playerId) }) : t('home.tiles.winRate')}
+              value={me && me.games > 0 ? percent(me.rate, 0) : '—'}
+              sub={me && me.games > 0 ? t('home.tiles.record', { wins: me.wins, losses: me.losses }) : t('home.tiles.setDefault')}
               tone={me && me.games > 0 ? (me.rate >= 0.5 ? 'win' : 'loss') : 'default'}
             />
             <StatTile
-              label="Most used protocol"
+              label={t('home.tiles.mostUsed')}
               value={topProtocol && isKnownProtocol(topProtocol.id) ? <ProtocolChip protocolId={topProtocol.id} /> : '—'}
-              sub={topProtocol ? `${topProtocol.decks} decks · ${Math.round(topProtocol.share * 100)}%` : undefined}
+              sub={topProtocol ? t('home.tiles.decksShare', { count: topProtocol.decks, share: percent(topProtocol.share, 0) }) : undefined}
               tone="accent"
             />
           </div>
 
           <Panel
-            title="Recent games"
+            title={t('home.recent.title')}
             headerRight={
               <Button size="sm" variant="ghost" to="/games" iconRight={<IconChevron direction="right" />}>
-                All games
+                {t('home.actions.allGames')}
               </Button>
             }
           >

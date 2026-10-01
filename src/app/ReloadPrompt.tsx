@@ -1,9 +1,11 @@
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Button, TerminalLine } from '@/components/ui';
+import { useT } from '@/i18n';
 import styles from './ReloadPrompt.module.css';
 
 /** Shown when a new service worker is waiting. */
 export function ReloadPrompt() {
+  const { t } = useT();
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
@@ -18,13 +20,13 @@ export function ReloadPrompt() {
 
   return (
     <div className={styles.wrap} role="status">
-      <TerminalLine tone="warn">new version compiled — reload to apply</TerminalLine>
+      <TerminalLine tone="warn">{t('app.reload.message')}</TerminalLine>
       <div className={styles.actions}>
         <Button size="sm" variant="primary" onClick={() => updateServiceWorker(true)}>
-          Reload
+          {t('app.reload.reload')}
         </Button>
         <Button size="sm" variant="ghost" onClick={() => setNeedRefresh(false)}>
-          Later
+          {t('app.reload.later')}
         </Button>
       </div>
     </div>

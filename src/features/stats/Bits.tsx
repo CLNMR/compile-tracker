@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { cx } from '@/components/ui';
-import { WILSON_HINT } from './format';
+import { useT } from '@/i18n';
 import s from './Bits.module.css';
 
 /** Thin bar for inline use inside table cells. `value` in 0..max. */
@@ -25,9 +25,11 @@ export function NumBar({ label, value, max = 1, color }: { label: ReactNode; val
 
 /** W/L squares, most recent last. */
 export function FormSquares({ form }: { form: ('W' | 'L')[] }) {
+  const { t } = useT();
   if (form.length === 0) return <span className={s.dim}>–</span>;
+  const text = form.map((r) => (r === 'W' ? t('stats.form.win') : t('stats.form.loss'))).join(' ');
   return (
-    <span className={s.form} aria-label={`Recent form: ${form.join(' ')}`} title={form.join(' ')}>
+    <span className={s.form} aria-label={t('stats.form.recent', { form: text })} title={text}>
       {form.map((r, i) => (
         <span key={i} className={cx(s.sq, r === 'W' ? s.sqWin : s.sqLoss)} aria-hidden="true" />
       ))}
@@ -37,8 +39,9 @@ export function FormSquares({ form }: { form: ('W' | 'L')[] }) {
 
 /** Mono value with a tooltip explaining the Wilson lower bound. */
 export function WilsonValue({ value, children }: { value: string; children?: ReactNode }) {
+  const { t } = useT();
   return (
-    <abbr className={s.wilson} title={WILSON_HINT}>
+    <abbr className={s.wilson} title={t('stats.wilson.hint')}>
       {children ?? value}
     </abbr>
   );

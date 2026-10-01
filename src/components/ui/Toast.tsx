@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useT } from '@/i18n';
 import { cx } from './cx';
 import { IconX } from './icons';
 import { ToastContext, type ToastApi, type ToastInput, type ToastItem } from './toastContext';
@@ -7,6 +8,7 @@ import s from './Toast.module.css';
 let counter = 0;
 
 export function ToastProvider({ children }: { children: ReactNode }) {
+  const { t } = useT();
   const [items, setItems] = useState<ToastItem[]>([]);
   const timers = useRef(new Map<number, number>());
 
@@ -38,7 +40,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <div className={s.viewport} role="region" aria-label="Notifications">
+      <div className={s.viewport} role="region" aria-label={t('ui.toast.region')}>
         {items.map((t) => (
           <ToastView key={t.id} item={t} onDismiss={() => dismiss(t.id)} />
         ))}
@@ -48,6 +50,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 }
 
 function ToastView({ item, onDismiss }: { item: ToastItem; onDismiss: () => void }) {
+  const { t } = useT();
   const tone = item.tone ?? 'default';
   return (
     <div className={cx(s.toast, s[tone])} role={tone === 'loss' ? 'alert' : 'status'} aria-live={tone === 'loss' ? 'assertive' : 'polite'}>
@@ -58,7 +61,7 @@ function ToastView({ item, onDismiss }: { item: ToastItem; onDismiss: () => void
         <div className={s.title}>{item.title}</div>
         {item.description != null ? <div className={s.desc}>{item.description}</div> : null}
       </div>
-      <button type="button" className={s.close} onClick={onDismiss} aria-label="Dismiss">
+      <button type="button" className={s.close} onClick={onDismiss} aria-label={t('ui.toast.dismiss')}>
         <IconX size={14} />
       </button>
     </div>

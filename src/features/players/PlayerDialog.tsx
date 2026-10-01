@@ -3,6 +3,7 @@ import type { PlayerDoc } from '@/types';
 import { Button, Dialog, TextField, useToast } from '@/components/ui';
 import { useUid } from '@/hooks/useAuth';
 import { usePlayers } from '@/hooks/usePlayers';
+import { useT } from '@/i18n';
 import { createPlayer, normalizePlayerName, renamePlayer } from '@/repo/players';
 
 export interface PlayerDialogProps {
@@ -16,6 +17,7 @@ export interface PlayerDialogProps {
 
 /** Create or rename a player. Enter submits. */
 export function PlayerDialog({ open, onClose, player, onSaved }: PlayerDialogProps) {
+  const { t } = useT();
   const uid = useUid();
   const toast = useToast();
   const { players } = usePlayers();
@@ -42,11 +44,11 @@ export function PlayerDialog({ open, onClose, player, onSaved }: PlayerDialogPro
   const submit = async (e?: FormEvent) => {
     e?.preventDefault();
     if (!clean) {
-      setError('A name is required.');
+      setError(t('players.dialog.nameRequired'));
       return;
     }
     if (duplicate) {
-      setError('A player with this name already exists.');
+      setError(t('players.dialog.duplicate'));
       return;
     }
     if (unchanged) {
@@ -60,15 +62,15 @@ export function PlayerDialog({ open, onClose, player, onSaved }: PlayerDialogPro
       if (player) {
         await renamePlayer(uid, player.id, clean);
         id = player.id;
-        toast.push({ title: 'Player renamed', description: `${player.name} → ${clean}` });
+        toast.push({ title: t('players.toast.renamed'), description: `${player.name} → ${clean}` });
       } else {
         id = await createPlayer(uid, clean);
-        toast.push({ title: 'Player created', description: clean, tone: 'win' });
+        toast.push({ title: t('players.toast.created'), description: clean, tone: 'win' });
       }
       onSaved?.(id);
       onClose();
     } catch (err) {
-      setError((err as Error).message || 'Could not save player.');
+      setError((err as Error).message || t('players.dialog.saveFailed'));
     } finally {
       setBusy(false);
     }
@@ -78,29 +80,29 @@ export function PlayerDialog({ open, onClose, player, onSaved }: PlayerDialogPro
     <Dialog
       open={open}
       onClose={() => (busy ? undefined : onClose())}
-      title={player ? 'Rename player' : 'New player'}
+      title={player ? t('players.dialog.renameTitle') : t('players.dialog.newTitle')}
       footer={
         <>
           <Button variant="subtle" onClick={onClose} disabled={busy}>
-            Cancel
+            {t('common.actions.cancel')}
           </Button>
           <Button type="submit" form={formId} disabled={!canSave} loading={busy}>
-            {player ? 'Rename' : 'Create'}
+            {player ? t('common.actions.rename') : t('common.actions.create')}
           </Button>
         </>
       }
     >
       <form id={formId} onSubmit={submit}>
         <TextField
-          label="Name"
-          placeholder="e.g. Ada"
+          label={t('players.dialog.nameLabel')}
+          placeholder={t('players.dialog.placeholder')}
           value={name}
           onChange={(v) => {
             setName(v);
             if (error) setError(null);
           }}
-          error={error ?? (duplicate ? 'A player with this name already exists.' : undefined)}
-          hint="Only you can see names. Others see a pseudonym."
+          error={error ?? (duplicate ? t('players.dialog.duplicate') : undefined)}
+          hint={t('players.dialog.hint')}
           required
           inputProps={{ autoFocus: true, autoComplete: 'off', maxLength: 40, enterKeyHint: 'done' }}
         />

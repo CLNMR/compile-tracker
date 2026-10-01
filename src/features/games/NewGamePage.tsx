@@ -20,6 +20,7 @@ import {
   useToast,
 } from '@/components/ui';
 import { ProtocolCard, ProtocolPicker } from '@/components/protocol';
+import { useT, type TKey } from '@/i18n';
 import { useUid } from '@/hooks/useAuth';
 import { useGame } from '@/hooks/useGames';
 import { usePlayerLabel, usePlayers } from '@/hooks/usePlayers';
@@ -49,10 +50,10 @@ interface WizardState {
   isTestData: boolean;
 }
 
-const STEPS: { n: Step; label: string }[] = [
-  { n: 1, label: 'Players' },
-  { n: 2, label: 'Protocols' },
-  { n: 3, label: 'Result' },
+const STEPS: { n: Step; key: TKey }[] = [
+  { n: 1, key: 'games.new.steps.players' },
+  { n: 2, key: 'games.new.steps.protocols' },
+  { n: 3, key: 'games.new.steps.result' },
 ];
 
 const isStringArray = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === 'string');
@@ -117,6 +118,7 @@ function stateFromGame(game: GameDoc): WizardState {
 }
 
 export default function NewGamePage() {
+  const { t } = useT();
   const { id } = useParams();
   const uid = useUid();
   const editing = id != null;
@@ -128,7 +130,7 @@ export default function NewGamePage() {
   if (playersLoading || settingsLoading || (editing && !gamesReady && !game)) {
     return (
       <div className={s.center}>
-        <Spinner size={28} label="Loading" />
+        <Spinner size={28} label={t('common.game.loading')} />
       </div>
     );
   }
@@ -138,11 +140,11 @@ export default function NewGamePage() {
       return (
         <EmptyState
           icon={<IconList />}
-          title="Not found"
-          lines={['no game at this address.']}
+          title={t('games.notFound.title')}
+          lines={[t('games.notFound.line1')]}
           action={
             <Button to="/games" variant="ghost">
-              All games
+              {t('games.notFound.allGames')}
             </Button>
           }
         />
@@ -151,11 +153,11 @@ export default function NewGamePage() {
     if (game.ownerUid !== uid) {
       return (
         <EmptyState
-          title="Access denied"
-          lines={['this game was recorded by someone else.', { text: 'only the owner can edit it.', tone: 'muted' }]}
+          title={t('games.new.accessDenied.title')}
+          lines={[t('games.new.accessDenied.line1'), { text: t('games.new.accessDenied.line2'), tone: 'muted' }]}
           action={
             <Button to={`/games/${game.id}`} variant="ghost">
-              View game
+              {t('games.new.accessDenied.viewGame')}
             </Button>
           }
         />
@@ -174,6 +176,7 @@ interface WizardProps {
 }
 
 function Wizard({ game, makeInitial }: WizardProps) {
+  const { t, protocolName } = useT();
   const uid = useUid();
   const navigate = useNavigate();
   const toast = useToast();
@@ -203,12 +206,12 @@ function Wizard({ game, makeInitial }: WizardProps) {
     const opts = active.map((p) => ({ value: p.id, label: p.name }));
     if (selected && !active.some((p) => p.id === selected)) {
       const p = byId.get(selected);
-      opts.push({ value: selected, label: p ? `${p.name} (archived)` : pseudonym(selected) });
+      opts.push({ value: selected, label: p ? `${p.name} (${t('common.game.archived')})` : pseudonym(selected) });
     }
     return opts;
   };
-  const p1Name = st.p1Id ? label(st.p1Id) : 'Player 1';
-  const p2Name = st.p2Id ? label(st.p2Id) : 'Player 2';
+  const p1Name = st.p1Id ? label(st.p1Id) : t('common.game.player1');
+  const p2Name = st.p2Id ? label(st.p2Id) : t('common.game.player2');
 
   const step1Ok = !!st.p1Id && !!st.p2Id && st.p1Id !== st.p2Id;
   const overlap = st.p1Protocols.some((id) => st.p2Protocols.includes(id));
@@ -284,7 +287,11 @@ function Wizard({ game, makeInitial }: WizardProps) {
       } else {
         savedId = await createGame(uid, input);
       }
-      toast.push({ title: 'Game compiled', description: `${p1Name} vs ${p2Name} — ${winner === 'p1' ? p1Name : p2Name} wins`, tone: 'win' });
+      toast.push({
+        title: t('games.new.toast.compiled'),
+        description: t('games.new.toast.compiledDesc', { p1: p1Name, p2: p2Name, winner: winner === 'p1' ? p1Name : p2Name }),
+        tone: 'win',
+      });
       if (andNew && !editing) {
         setSt((cur) => ({
           ...blankState(new Date()),
@@ -300,8 +307,12 @@ function Wizard({ game, makeInitial }: WizardProps) {
         navigate(`/games/${savedId}`, { replace: editing });
       }
     } catch (e) {
-      if (e instanceof InvalidGameError) toast.push({ title: 'Invalid game', description: e.message, tone: 'loss' });
-      else toast.push({ title: 'Could not save', description: (e as Error).message, tone: 'loss', durationMs: 6000 });
+      if (e instanceof InvalidGameError) {
+        const side = e.params.side === 'p1' ? t('common.game.player1') : e.params.side === 'p2' ? t('common.game.player2') : '';
+        const protocol = e.params.protocol ? protocolName(e.params.protocol) : '';
+        toast.push({ title: t('games.new.toast.invalid'), description: t(`games.new.errors.${e.code}`, { side, protocol }), tone: 'loss' });
+      }
+      else toast.push({ title: t('games.new.toast.saveFailed'), description: (e as Error).message, tone: 'loss', durationMs: 6000 });
     } finally {
       setSaving(false);
     }
@@ -321,12 +332,12 @@ function Wizard({ game, makeInitial }: WizardProps) {
   /* ---------- render ---------- */
   return (
     <div className={s.page}>
-      <SectionHeader as="h1" right={editing ? <Badge mono>editing</Badge> : null}>
-        {editing ? 'Edit game' : 'New game'}
+      <SectionHeader as="h1" right={editing ? <Badge mono>{t('games.new.editingBadge')}</Badge> : null}>
+        {editing ? t('games.new.editTitle') : t('games.new.title')}
       </SectionHeader>
 
-      <ol className={s.stepper} aria-label="Steps">
-        {STEPS.map(({ n, label: name }) => {
+      <ol className={s.stepper} aria-label={t('games.new.stepsAria')}>
+        {STEPS.map(({ n, key }) => {
           const current = n === st.step;
           const done = n < st.step;
           return (
@@ -339,7 +350,7 @@ function Wizard({ game, makeInitial }: WizardProps) {
                 aria-current={current ? 'step' : undefined}
               >
                 <span className={s.stepNum}>0{n}</span>
-                <span className={s.stepLabel}>{name}</span>
+                <span className={s.stepLabel}>{t(key)}</span>
               </button>
             </li>
           );
@@ -347,58 +358,69 @@ function Wizard({ game, makeInitial }: WizardProps) {
       </ol>
 
       {st.step === 1 ? (
-        <section className={s.step} aria-label="Players">
+        <section className={s.step} aria-label={t('games.new.steps.players')}>
           <div className={s.playerGrid}>
             <div className={s.playerField}>
               <Select
-                label="Player 1"
+                label={t('common.game.player1')}
                 value={st.p1Id}
                 onChange={(v) => patch({ p1Id: v })}
-                placeholder="Choose a player…"
+                placeholder={t('games.new.players.choosePlayer')}
                 options={playerOptions(st.p1Id)}
-                error={showErrors && !st.p1Id ? 'Pick player 1.' : undefined}
+                error={showErrors && !st.p1Id ? t('games.new.players.pickPlayer1') : undefined}
               />
               <Button size="sm" variant="ghost" iconLeft={<IconPlus />} onClick={() => setNewPlayerFor('p1')}>
-                New player
+                {t('games.new.players.newPlayer')}
               </Button>
             </div>
-            <button type="button" className={s.swap} onClick={swapPlayers} disabled={!st.p1Id && !st.p2Id} aria-label="Swap players" title="Swap players">
+            <button
+              type="button"
+              className={s.swap}
+              onClick={swapPlayers}
+              disabled={!st.p1Id && !st.p2Id}
+              aria-label={t('games.new.players.swap')}
+              title={t('games.new.players.swap')}
+            >
               ⇄
             </button>
             <div className={s.playerField}>
               <Select
-                label="Player 2"
+                label={t('common.game.player2')}
                 value={st.p2Id}
                 onChange={(v) => patch({ p2Id: v })}
-                placeholder="Choose a player…"
+                placeholder={t('games.new.players.choosePlayer')}
                 options={playerOptions(st.p2Id)}
                 error={
-                  showErrors && !st.p2Id ? 'Pick player 2.' : st.p1Id && st.p2Id && st.p1Id === st.p2Id ? 'A player cannot face themselves.' : undefined
+                  showErrors && !st.p2Id
+                    ? t('games.new.players.pickPlayer2')
+                    : st.p1Id && st.p2Id && st.p1Id === st.p2Id
+                      ? t('games.new.players.samePlayer')
+                      : undefined
                 }
               />
               <Button size="sm" variant="ghost" iconLeft={<IconPlus />} onClick={() => setNewPlayerFor('p2')}>
-                New player
+                {t('games.new.players.newPlayer')}
               </Button>
             </div>
           </div>
           {active.length < 2 ? (
             <TerminalLine tone="warn" prompt="!">
-              you need at least two players. <Link to="/players">Manage players</Link>
+              {t('games.new.players.needTwo')} <Link to="/players">{t('games.new.players.managePlayers')}</Link>
             </TerminalLine>
           ) : null}
         </section>
       ) : null}
 
       {st.step === 2 ? (
-        <section className={s.step} aria-label="Protocols">
+        <section className={s.step} aria-label={t('games.new.steps.protocols')}>
           {enabledCount < 6 ? (
             <TerminalLine tone="warn" prompt="!">
-              only {enabledCount} protocols enabled — a game needs 6. <Link to="/settings">Enable more sets in Settings</Link>
+              {t('games.new.protocols.tooFewEnabled', { count: enabledCount })} <Link to="/settings">{t('games.new.protocols.enableMore')}</Link>
             </TerminalLine>
           ) : null}
           {showErrors && !step2Ok ? (
             <TerminalLine tone="loss" prompt="✗">
-              {overlap ? 'both sides share a protocol — pick 6 distinct ones.' : 'each side needs exactly 3 protocols.'}
+              {overlap ? t('games.new.protocols.overlap') : t('games.new.protocols.needThree')}
             </TerminalLine>
           ) : null}
           <div className={cx(s.pickers, sideBySide && s.pickersWide)}>
@@ -421,33 +443,33 @@ function Wizard({ game, makeInitial }: WizardProps) {
       ) : null}
 
       {st.step === 3 ? (
-        <section className={s.step} aria-label="Result">
+        <section className={s.step} aria-label={t('games.new.steps.result')}>
           <div className={s.resultMeta}>
             <TextField
-              label="Played at"
+              label={t('games.new.result.playedAt')}
               type="datetime-local"
               value={st.playedAt}
               onChange={(v) => patch({ playedAt: v })}
-              error={!playedAt ? 'Enter a valid date and time.' : undefined}
+              error={!playedAt ? t('games.new.result.invalidDate') : undefined}
               inputProps={{ max: '9999-12-31T23:59' }}
             />
             <div className={s.firstField}>
-              <span className={s.fieldLabel}>First player</span>
+              <span className={s.fieldLabel}>{t('games.new.result.firstPlayer')}</span>
               <SegmentedControl<FirstPlayer>
                 fullWidth
-                label="First player"
+                label={t('games.new.result.firstPlayer')}
                 value={st.firstPlayer}
                 onChange={(v) => patch({ firstPlayer: v })}
                 options={[
                   { value: 'p1', label: <span className={s.segLabel}>{p1Name}</span> },
                   { value: 'p2', label: <span className={s.segLabel}>{p2Name}</span> },
-                  { value: 'unknown', label: <span className={s.segLabel}>unknown</span> },
+                  { value: 'unknown', label: <span className={s.segLabel}>{t('games.new.result.unknown')}</span> },
                 ]}
               />
             </div>
           </div>
 
-          <TerminalLine tone="muted">tap a card to mark it compiled. the side with all 3 wins.</TerminalLine>
+          <TerminalLine tone="muted">{t('games.new.result.hint')}</TerminalLine>
 
           <div className={cx(s.sides, sideBySide && s.sidesWide)}>
             {(['p1', 'p2'] as const).map((side) => {
@@ -456,12 +478,16 @@ function Wizard({ game, makeInitial }: WizardProps) {
               const name = side === 'p1' ? p1Name : p2Name;
               const won = winner === side;
               return (
-                <section key={side} className={cx(s.side, won && s.sideWon)} aria-label={`${name} result`}>
+                <section key={side} className={cx(s.side, won && s.sideWon)} aria-label={t('games.new.result.sideAria', { name })}>
                   <header className={s.sideHead}>
                     <span className={s.sideKey}>{side.toUpperCase()}</span>
                     <span className={cx(s.sideName, won && s.sideNameWon)}>{name}</span>
                     <span className={s.sideBadges}>
-                      {won ? <Badge tone="win">winner</Badge> : <Badge mono>{compiled.length} / 3</Badge>}
+                      {won ? (
+                        <Badge tone="win">{t('games.card.winner')}</Badge>
+                      ) : (
+                        <Badge mono>{t('games.card.compiledOf', { compiled: compiled.length })}</Badge>
+                      )}
                     </span>
                   </header>
                   <div className={s.cards}>
@@ -474,7 +500,7 @@ function Wizard({ game, makeInitial }: WizardProps) {
                         state={compiled.includes(id) ? 'compiled' : 'loading'}
                         onClick={() => toggleCompiled(side, id)}
                         style={cardStyle}
-                        title={compiled.includes(id) ? 'Compiled — tap to undo' : 'Tap to mark as compiled'}
+                        title={compiled.includes(id) ? t('games.new.result.cardCompiled') : t('games.new.result.cardTap')}
                       />
                     ))}
                   </div>
@@ -485,13 +511,11 @@ function Wizard({ game, makeInitial }: WizardProps) {
 
           {winner == null ? (
             <TerminalLine tone={showErrors ? 'loss' : 'muted'} prompt={showErrors ? '✗' : '>'}>
-              {st.p1Compiled.length === 3 && st.p2Compiled.length === 3
-                ? 'both sides compiled all 3 — only one side can win.'
-                : 'no winner yet — mark all 3 protocols of the winning side as compiled.'}
+              {st.p1Compiled.length === 3 && st.p2Compiled.length === 3 ? t('games.new.result.bothCompiled') : t('games.new.result.noWinner')}
             </TerminalLine>
           ) : (
             <TerminalLine tone="win" prompt="✓">
-              compile successful — {winner === 'p1' ? p1Name : p2Name} wins
+              {t('games.new.result.success', { winner: winner === 'p1' ? p1Name : p2Name })}
             </TerminalLine>
           )}
         </section>
@@ -501,27 +525,27 @@ function Wizard({ game, makeInitial }: WizardProps) {
         <div className={s.footerInner}>
           {st.step > 1 ? (
             <Button variant="subtle" onClick={back} disabled={saving} iconLeft={<IconChevron direction="left" />}>
-              Back
+              {t('common.actions.back')}
             </Button>
           ) : (
             <Button variant="subtle" onClick={cancel} disabled={saving}>
-              Cancel
+              {t('common.actions.cancel')}
             </Button>
           )}
           <span className={s.footerSpacer} />
           {st.step < 3 ? (
             <Button onClick={next} iconRight={<IconChevron direction="right" />} disabled={!stepOk && showErrors}>
-              Next
+              {t('common.actions.next')}
             </Button>
           ) : (
             <>
               {!editing ? (
                 <Button variant="ghost" onClick={() => void save(true)} disabled={!step3Ok || saving} className={s.saveNew}>
-                  Save &amp; new
+                  {t('games.new.actions.saveAndNew')}
                 </Button>
               ) : null}
               <Button onClick={() => void save(false)} loading={saving} disabled={!step3Ok}>
-                {editing ? 'Save changes' : 'Compile game'}
+                {editing ? t('games.new.actions.saveChanges') : t('games.new.actions.compileGame')}
               </Button>
             </>
           )}

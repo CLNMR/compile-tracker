@@ -14,6 +14,7 @@ import {
 } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
 import { ADMIN_UIDS, auth } from '@/firebase/app';
+import { t } from '@/i18n';
 
 /** Raised when the Google account is already bound to another Compile Tracker identity. */
 export interface SwitchRequest {
@@ -102,7 +103,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     getRedirectResult(auth)
       .then((res) => {
         if (res?.user) {
-          set({ redirectNotice: { tone: 'win', title: 'Google account linked', description: 'Your data now follows your Google sign-in.' } });
+          set({ redirectNotice: { tone: 'win', title: t('auth.linked.title'), description: t('auth.linked.description') } });
         }
       })
       .catch((e: unknown) => {
@@ -112,7 +113,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
         const d = describe(e);
         console.error('[auth] redirect result failed', e);
-        set({ redirectNotice: { tone: 'loss', title: 'Could not link account', description: `${d.message} (${d.code})` } });
+        set({ redirectNotice: { tone: 'loss', title: t('auth.linkFailed.title'), description: `${d.message} (${d.code})` } });
       });
 
     const unsub = onAuthStateChanged(auth, async (user) => {
@@ -144,7 +145,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   linkGoogle: async () => {
     const user = get().user;
-    if (!user) return { ok: false, reason: 'error', code: 'no-user', message: 'Not signed in yet — try again in a moment.' };
+    if (!user) return { ok: false, reason: 'error', code: 'no-user', message: t('auth.notSignedIn') };
 
     if (prefersRedirect()) {
       try {

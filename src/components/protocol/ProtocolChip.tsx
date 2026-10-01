@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { getProtocol } from '@/data/protocols';
 import { SET_BY_ID } from '@/data/sets';
+import { useT } from '@/i18n';
 import { cx } from '@/components/ui/cx';
 import { IconCheck, IconX } from '@/components/ui/icons';
 import s from './ProtocolChip.module.css';
@@ -18,15 +19,17 @@ export interface ProtocolChipProps {
 
 /** Inline pill with a gradient dot + protocol name, for dense lists. */
 export function ProtocolChip({ protocolId, compiled, size = 'md', showSet, onClick, onRemove, selected, className }: ProtocolChipProps) {
+  const { t, protocolName, setShort } = useT();
   const p = getProtocol(protocolId);
+  const name = protocolName(p);
   const vars = { '--p': p.colors.primary, '--s': p.colors.secondary } as CSSProperties;
   const cls = cx(s.root, s[size], compiled && s.compiled, selected && s.selected, onClick && s.clickable, className);
   const inner = (
     <>
       <span className={s.dot} aria-hidden="true" />
-      <span className={s.name}>{p.name}</span>
-      {showSet ? <span className={s.set}>{SET_BY_ID[p.set].short}</span> : null}
-      {compiled ? <IconCheck size={12} strokeWidth={3} className={s.check} aria-label="compiled" /> : null}
+      <span className={s.name}>{name}</span>
+      {showSet ? <span className={s.set}>{setShort(SET_BY_ID[p.set])}</span> : null}
+      {compiled ? <IconCheck size={12} strokeWidth={3} className={s.check} aria-label={t('protocol.chip.compiled')} /> : null}
     </>
   );
   const Tag = onClick ? 'button' : 'span';
@@ -36,7 +39,7 @@ export function ProtocolChip({ protocolId, compiled, size = 'md', showSet, onCli
         {inner}
       </Tag>
       {onRemove ? (
-        <button type="button" className={s.remove} onClick={onRemove} aria-label={`Remove ${p.name}`}>
+        <button type="button" className={s.remove} onClick={onRemove} aria-label={t('protocol.chip.remove', { name })}>
           <IconX size={12} strokeWidth={2.5} />
         </button>
       ) : null}

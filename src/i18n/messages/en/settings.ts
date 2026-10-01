@@ -1,0 +1,83 @@
+export const settings = {
+  protocolSets: {
+    title: 'Protocol sets',
+    protocolCount_one: '{count} protocol',
+    protocolCount_other: '{count} protocols',
+    enabled_one: '{count} protocol enabled',
+    enabled_other: '{count} protocols enabled',
+    across_one: 'across {count} set',
+    across_other: 'across {count} sets',
+    needMore: 'a game needs {min} distinct protocols — enable more sets to record games',
+    atLeastOne: 'At least one set must stay enabled',
+  },
+  me: {
+    title: 'Me',
+    defaultPlayer: 'Default player',
+    noDefault: 'No default',
+    hintActive: 'Pre-selected as Player 1 when recording a game.',
+    hintEmpty: 'Add players first — they appear here.',
+  },
+  language: {
+    hint: 'Applies immediately. Protocol names are translated too.',
+    status: 'language: {locale} · browser: {browser}',
+  },
+  account: {
+    title: 'Account',
+    anonymous: 'anonymous',
+    google: 'google',
+    identityAnonymous: 'identity: anonymous — data is bound to this device',
+    identityGoogle: 'identity: google',
+    linkGoogle: 'Link Google account',
+    signOut: 'Sign out',
+    uidTitle: 'Your user id',
+    toast: {
+      redirecting: 'Redirecting to Google…',
+      switched: 'Switched to your Google account',
+      switchFailed: 'Could not switch account',
+      signedOut: 'Signed out',
+      signedOutDesc: 'A fresh anonymous identity was created.',
+      signOutFailed: 'Sign-out failed',
+      uidCopied: 'uid copied',
+      clipboard: 'Clipboard unavailable',
+      clipboardDesc: 'Select the id and copy it manually.',
+    },
+    switchDialog: {
+      title: 'Google account already in use',
+      confirm: 'Switch to that account',
+      thisAccount: 'This Google account',
+      /** Rendered as `{email | thisAccount} {body}`. */
+      body: "already has Compile Tracker data under another identity. You can switch to it now — the games and players recorded under your current anonymous identity stay behind on this device's old identity and will not be merged.",
+      reconfirm: 'Google will ask you to confirm the account once more.',
+    },
+    signOutDialog: {
+      title: 'Sign out?',
+      confirm: 'Sign out',
+      anonymousBody:
+        'You are anonymous. Signing out creates a new anonymous identity, and the data bound to this one becomes unreachable unless you link a Google account first.',
+      googleBody: 'A new anonymous identity is created for this device. Sign in with Google again to get back to your data.',
+    },
+  },
+  install: {
+    title: 'Install',
+    running: 'running as installed app',
+    offer: 'install for offline use and a home-screen icon',
+    button: 'Install app',
+    ios: 'on iOS: tap Share → "Add to Home Screen"',
+    browser: 'install from your browser menu ("Install app" / "Add to Home screen")',
+    installing: 'Installing…',
+  },
+  data: {
+    title: 'Data',
+    myGames: 'my games',
+    myPlayers: 'my players',
+    gamesInDb: 'games in db',
+    devTools: 'Developer tools',
+    kitchenSink: 'UI kitchen sink',
+  },
+  about: {
+    title: 'About',
+    version: 'compile tracker · version {version}',
+    attribution:
+      'Compile is a game by Michael Yang, published by Greater Than Games. This is an unofficial fan tool and is not affiliated with or endorsed by either.',
+  },
+} as const;

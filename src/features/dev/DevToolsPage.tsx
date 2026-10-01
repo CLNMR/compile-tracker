@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Badge,
   Button,
@@ -20,6 +20,7 @@ import { useEmulators } from '@/firebase/app';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlayers } from '@/hooks/usePlayers';
 import { useSettings } from '@/hooks/useSettings';
+import { useT } from '@/i18n';
 import { deleteAllTestGames, deleteGame, deleteMyGames, deleteMyTestGames, writeGamesBatch } from '@/repo/games';
 import { createPlayers, deleteAllPlayers } from '@/repo/players';
 import { deleteUserSettings } from '@/repo/users';
@@ -35,12 +36,18 @@ const LIMITS = {
 const randomSeed = () => Math.floor(Math.random() * 1_000_000_000);
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
+/** Fill `{slot}` placeholders of an (untranslated-placeholder) message with React nodes. */
+function fill(template: string, slots: Record<string, ReactNode>): ReactNode {
+  return template.split(/\{(\w+)\}/g).map((part, i) => (i % 2 === 1 ? <Fragment key={i}>{slots[part] ?? `{${part}}`}</Fragment> : part));
+}
+
 type Log = (text: string, tone?: TerminalTone) => void;
 
 /** /dev — test-data generator, resets, admin and emulator helpers with a shared terminal log. */
 export default function DevToolsPage() {
+  const { t } = useT();
   const { isAdmin } = useAuth();
-  const [lines, setLines] = useState<TerminalBlockLine[]>([{ text: 'developer tools ready.', tone: 'muted' }]);
+  const [lines, setLines] = useState<TerminalBlockLine[]>(() => [{ text: t('dev.ready'), tone: 'muted' }]);
   const log = useCallback<Log>((text, tone = 'default') => {
     setLines((cur) => [...cur, { text, tone, prompt: tone === 'win' ? '✓' : tone === 'loss' ? '✗' : tone === 'warn' ? '!' : '>' }]);
   }, []);
@@ -54,11 +61,11 @@ export default function DevToolsPage() {
   return (
     <div className={s.page}>
       <div className={s.head}>
-        <SectionHeader as="h1">Developer tools</SectionHeader>
-        <TerminalLine tone="warn">these actions write to the shared database</TerminalLine>
+        <SectionHeader as="h1">{t('dev.title')}</SectionHeader>
+        <TerminalLine tone="warn">{t('dev.warning')}</TerminalLine>
       </div>
 
-      <Panel title="Log" headerRight={<Badge mono>{lines.length}</Badge>} padding="sm">
+      <Panel title={t('dev.log')} headerRight={<Badge mono>{lines.length}</Badge>} padding="sm">
         <div ref={scrollRef} className={s.logScroll}>
           <TerminalBlock lines={lines} cursor className={s.logBlock} />
         </div>
@@ -81,6 +88,7 @@ function parseInt_(v: string, lim: { min: number; max: number }): number | null 
 }
 
 function GeneratePanel({ log }: { log: Log }) {
+  const { t } = useT();
   const { uid } = useAuth();
   const { enabledSets } = useSettings();
   const { players } = usePlayers();
@@ -105,99 +113,107 @@ function GeneratePanel({ log }: { log: Log }) {
     if (!uid || !valid || tooFewProtocols) return;
     setRunning(true);
     try {
-      log(`generate: ${nGames} games · ${nPlayers} players · ${nDays} days · seed ${nSeed} · sets ${enabledSets.join(',')}`);
+      log(t('dev.generate.log.start', { games: nGames, players: nPlayers, days: nDays, seed: String(nSeed), sets: enabledSets.join(',') }));
 
       const wanted = TEST_PLAYER_NAMES.slice(0, nPlayers);
       const byName = new Map(players.map((p) => [p.name, p.id]));
       const missing = wanted.filter((n) => !byName.has(n));
-      log(`players: ${wanted.length - missing.length} existing, ${missing.length} to create`, 'muted');
+      log(t('dev.generate.log.players', { existing: wanted.length - missing.length, missing: missing.length }), 'muted');
       if (missing.length) {
         const ids = await createPlayers(uid, missing);
         missing.forEach((n, i) => byName.set(n, ids[i]));
-        log(`created ${missing.join(', ')}`, 'muted');
+        log(t('dev.generate.log.created', { names: missing.join(', ') }), 'muted');
       }
       const playerIds = wanted.map((n) => byName.get(n)!);
 
       const inputs = generateGames({ games: nGames, playerIds, enabledSets, seed: nSeed, days: nDays });
-      log(`generated ${inputs.length} games, writing in batches of 400…`, 'muted');
+      log(t('dev.generate.log.generated', { count: inputs.length }), 'muted');
 
-      const written = await writeGamesBatch(uid, inputs, (n) => log(`wrote ${n} / ${inputs.length}`));
-      log(`done — ${written} test games written`, 'win');
-      toast.push({ title: 'Test data generated', description: `${written} games · ${playerIds.length} players`, tone: 'win' });
+      const written = await writeGamesBatch(uid, inputs, (n) => log(t('dev.generate.log.wrote', { n, total: inputs.length })));
+      log(t('dev.generate.log.done', { count: written }), 'win');
+      toast.push({
+        title: t('dev.generate.toast.done'),
+        description: t('dev.generate.toast.doneDesc', { games: written, players: playerIds.length }),
+        tone: 'win',
+      });
     } catch (e) {
-      log(`generate failed: ${errMsg(e)}`, 'loss');
-      toast.push({ title: 'Generation failed', description: errMsg(e), tone: 'loss' });
+      log(t('dev.generate.log.failed', { error: errMsg(e) }), 'loss');
+      toast.push({ title: t('dev.generate.toast.failed'), description: errMsg(e), tone: 'loss' });
     } finally {
       setRunning(false);
     }
   };
 
   return (
-    <Panel title="Generate test data" headerRight={<Badge mono tone={tooFewProtocols ? 'warn' : 'default'}>{protocolCount} protocols</Badge>}>
+    <Panel
+      title={t('dev.generate.title')}
+      headerRight={
+        <Badge mono tone={tooFewProtocols ? 'warn' : 'default'}>
+          {t('dev.generate.protocolCount', { count: protocolCount })}
+        </Badge>
+      }
+    >
       <div className={s.stack}>
         <div className={s.fields}>
           <TextField
-            label="Games"
+            label={t('dev.generate.games')}
             type="number"
             value={games}
             onChange={setGames}
             disabled={running}
             inputProps={{ min: LIMITS.games.min, max: LIMITS.games.max, inputMode: 'numeric' }}
-            error={nGames == null ? `${LIMITS.games.min}–${LIMITS.games.max}` : undefined}
+            error={nGames == null ? t('dev.generate.range', { min: LIMITS.games.min, max: LIMITS.games.max }) : undefined}
           />
           <TextField
-            label="Players"
+            label={t('dev.generate.players')}
             type="number"
             value={playerCount}
             onChange={setPlayerCount}
             disabled={running}
             inputProps={{ min: LIMITS.players.min, max: LIMITS.players.max, inputMode: 'numeric' }}
-            error={nPlayers == null ? `${LIMITS.players.min}–${LIMITS.players.max}` : undefined}
+            error={nPlayers == null ? t('dev.generate.range', { min: LIMITS.players.min, max: LIMITS.players.max }) : undefined}
           />
           <TextField
-            label="Days"
+            label={t('dev.generate.days')}
             type="number"
             value={days}
             onChange={setDays}
             disabled={running}
             inputProps={{ min: LIMITS.days.min, max: LIMITS.days.max, inputMode: 'numeric' }}
-            error={nDays == null ? `${LIMITS.days.min}–${LIMITS.days.max}` : undefined}
+            error={nDays == null ? t('dev.generate.range', { min: LIMITS.days.min, max: LIMITS.days.max }) : undefined}
           />
           <TextField
             className={s.seedField}
-            label="Seed"
+            label={t('dev.generate.seed')}
             value={seed}
             onChange={setSeed}
             disabled={running}
             inputProps={{ inputMode: 'numeric', spellCheck: false }}
-            error={nSeed == null ? 'non-negative integer' : undefined}
+            error={nSeed == null ? t('dev.generate.seedError') : undefined}
             trailing={
               <Button size="sm" variant="ghost" onClick={() => setSeed(String(randomSeed()))} disabled={running}>
-                reroll
+                {t('dev.generate.reroll')}
               </Button>
             }
           />
         </div>
 
-        <p className={s.muted}>
-          Uses players named {TEST_PLAYER_NAMES.slice(0, 3).join(', ')}, … (created if missing) and the protocol sets enabled in Settings. Games
-          are flagged as test data. Same seed → identical games.
-        </p>
+        <p className={s.muted}>{t('dev.generate.hint', { names: TEST_PLAYER_NAMES.slice(0, 3).join(', ') })}</p>
 
         {tooFewProtocols ? (
           <TerminalLine tone="warn" prompt="!">
-            only {protocolCount} protocols enabled — enable sets in Settings until at least {MIN_PROTOCOLS} are available
+            {t('dev.generate.tooFew', { count: protocolCount, min: MIN_PROTOCOLS })}
           </TerminalLine>
         ) : null}
 
         <div className={s.row}>
           <Button onClick={() => void run()} disabled={running || !valid || tooFewProtocols || !uid}>
-            Generate
+            {t('dev.generate.run')}
           </Button>
           {running ? (
             <>
-              <Spinner label="Generating" />
-              <span className="muted mono">writing…</span>
+              <Spinner label={t('dev.generate.running')} />
+              <span className="muted mono">{t('dev.generate.writing')}</span>
             </>
           ) : null}
         </div>
@@ -211,6 +227,7 @@ function GeneratePanel({ log }: { log: Log }) {
 type ResetKind = 'test' | 'all' | 'global';
 
 function ResetPanel({ log }: { log: Log }) {
+  const { t } = useT();
   const { uid } = useAuth();
   const { defaultPlayerId, setDefaultPlayerId } = useSettings();
   const toast = useToast();
@@ -229,60 +246,60 @@ function ResetPanel({ log }: { log: Log }) {
     setBusy(true);
     try {
       if (kind === 'test') {
-        log('reset: deleting my test games…');
-        const n = await deleteMyTestGames(uid, (d) => log(`deleted ${d}`, 'muted'));
-        log(`removed ${n} test games`, 'win');
-        toast.push({ title: 'Test data deleted', description: `${n} games removed`, tone: 'win' });
+        log(t('dev.reset.log.testStart'));
+        const n = await deleteMyTestGames(uid, (d) => log(t('dev.reset.log.deleted', { count: d }), 'muted'));
+        log(t('dev.reset.log.testDone', { count: n }), 'win');
+        toast.push({ title: t('dev.reset.toast.testDone'), description: t('dev.reset.toast.gamesRemoved', { count: n }), tone: 'win' });
       } else if (kind === 'all') {
-        log('reset: deleting ALL my games…');
-        const g = await deleteMyGames(uid, (d) => log(`deleted ${d}`, 'muted'));
-        log(`removed ${g} games`, 'muted');
+        log(t('dev.reset.log.allStart'));
+        const g = await deleteMyGames(uid, (d) => log(t('dev.reset.log.deleted', { count: d }), 'muted'));
+        log(t('dev.reset.log.gamesRemoved', { count: g }), 'muted');
         const p = await deleteAllPlayers(uid);
-        log(`removed ${p} players`, 'muted');
+        log(t('dev.reset.log.playersRemoved', { count: p }), 'muted');
         if (alsoSettings) {
           await deleteUserSettings(uid);
-          log('settings reset to defaults', 'muted');
+          log(t('dev.reset.log.settingsReset'), 'muted');
         } else if (defaultPlayerId) {
           await setDefaultPlayerId(undefined);
-          log('cleared default player', 'muted');
+          log(t('dev.reset.log.defaultPlayerCleared'), 'muted');
         }
-        log(`done — ${g} games, ${p} players${alsoSettings ? ', settings' : ''} removed`, 'win');
-        toast.push({ title: 'All my data deleted', description: `${g} games · ${p} players`, tone: 'win' });
+        log(t(alsoSettings ? 'dev.reset.log.allDoneSettings' : 'dev.reset.log.allDone', { games: g, players: p }), 'win');
+        toast.push({ title: t('dev.reset.toast.allDone'), description: t('dev.reset.toast.allDoneDesc', { games: g, players: p }), tone: 'win' });
       } else {
-        log('purge: deleting test games from ALL users…', 'warn');
-        const n = await deleteAllTestGames((d) => log(`deleted ${d}`, 'muted'));
-        log(`purged ${n} global test games`, 'win');
-        toast.push({ title: 'Global test data purged', description: `${n} games removed`, tone: 'win' });
+        log(t('dev.reset.log.globalStart'), 'warn');
+        const n = await deleteAllTestGames((d) => log(t('dev.reset.log.deleted', { count: d }), 'muted'));
+        log(t('dev.reset.log.globalDone', { count: n }), 'win');
+        toast.push({ title: t('dev.reset.toast.globalDone'), description: t('dev.reset.toast.gamesRemoved', { count: n }), tone: 'win' });
       }
       setOpen(null);
       setAlsoSettings(false);
     } catch (e) {
-      log(`reset failed: ${errMsg(e)}`, 'loss');
-      toast.push({ title: 'Reset failed', description: errMsg(e), tone: 'loss' });
+      log(t('dev.reset.log.failed', { error: errMsg(e) }), 'loss');
+      toast.push({ title: t('dev.reset.toast.failed'), description: errMsg(e), tone: 'loss' });
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Panel title="Reset">
+    <Panel title={t('dev.reset.title')}>
       <div className={s.resetGrid}>
         <div className={s.resetItem}>
-          <p>Removes games you own that are flagged as test data. Players and real games stay.</p>
+          <p>{t('dev.reset.test.desc')}</p>
           <Button variant="danger" size="sm" onClick={() => setOpen('test')} disabled={!uid}>
-            Delete my test data
+            {t('dev.reset.test.button')}
           </Button>
         </div>
         <div className={s.resetItem}>
-          <p>Removes every game and player you own. Optionally resets your settings too.</p>
+          <p>{t('dev.reset.all.desc')}</p>
           <Button variant="danger" size="sm" onClick={() => setOpen('all')} disabled={!uid}>
-            Delete ALL my data
+            {t('dev.reset.all.button')}
           </Button>
         </div>
         <div className={s.resetItem}>
-          <p>Removes test-flagged games from every user. The security rules allow this for everyone.</p>
+          <p>{t('dev.reset.global.desc')}</p>
           <Button variant="danger" size="sm" onClick={() => setOpen('global')} disabled={!uid}>
-            Purge global test data
+            {t('dev.reset.global.button')}
           </Button>
         </div>
       </div>
@@ -291,28 +308,34 @@ function ResetPanel({ log }: { log: Log }) {
         open={open === 'test'}
         onClose={close}
         onConfirm={() => runReset('test')}
-        title="Delete my test data"
-        confirmLabel="Delete test games"
+        title={t('dev.reset.test.button')}
+        confirmLabel={t('dev.reset.test.confirm')}
         danger
         requireText="RESET"
         loading={busy}
       >
-        Deletes all games you own with <code>isTestData = true</code>. Your players and real games are untouched. There is no undo.
+        {fill(t('dev.reset.test.body'), { flag: <code>isTestData = true</code> })}
       </ConfirmDialog>
 
       <ConfirmDialog
         open={open === 'all'}
         onClose={close}
         onConfirm={() => runReset('all')}
-        title="Delete ALL my data"
-        confirmLabel="Delete everything"
+        title={t('dev.reset.all.button')}
+        confirmLabel={t('dev.reset.all.confirm')}
         danger
         requireText="RESET"
         loading={busy}
       >
         <div className={s.dialogStack}>
-          <p>Deletes every game and every player under your identity — test data and real games alike. There is no undo.</p>
-          <Checkbox label="Also reset my settings" description="Enabled sets and default player go back to defaults" checked={alsoSettings} onChange={setAlsoSettings} disabled={busy} />
+          <p>{t('dev.reset.all.body')}</p>
+          <Checkbox
+            label={t('dev.reset.all.alsoSettings')}
+            description={t('dev.reset.all.alsoSettingsDesc')}
+            checked={alsoSettings}
+            onChange={setAlsoSettings}
+            disabled={busy}
+          />
         </div>
       </ConfirmDialog>
 
@@ -320,14 +343,13 @@ function ResetPanel({ log }: { log: Log }) {
         open={open === 'global'}
         onClose={close}
         onConfirm={() => runReset('global')}
-        title="Purge global test data"
-        confirmLabel="Purge"
+        title={t('dev.reset.global.button')}
+        confirmLabel={t('dev.reset.global.confirm')}
         danger
         requireText="RESET"
         loading={busy}
       >
-        Deletes test-flagged games from <strong>all users</strong>, not just yours. The Firestore rules permit any signed-in user to delete
-        <code> isTestData</code> games, so this is safe for real data but affects everyone's test sets.
+        {fill(t('dev.reset.global.body'), { all: <strong>{t('dev.reset.global.allUsers')}</strong>, flag: <code>isTestData</code> })}
       </ConfirmDialog>
     </Panel>
   );
@@ -336,6 +358,7 @@ function ResetPanel({ log }: { log: Log }) {
 /* ------------------------------------------------------------------------ */
 
 function AdminPanel({ log }: { log: Log }) {
+  const { t } = useT();
   const toast = useToast();
   const [gameId, setGameId] = useState('');
   const [confirm, setConfirm] = useState(false);
@@ -346,46 +369,53 @@ function AdminPanel({ log }: { log: Log }) {
     setBusy(true);
     try {
       await deleteGame(id);
-      log(`admin: deleted game ${id}`, 'win');
-      toast.push({ title: 'Game deleted', description: id, tone: 'win' });
+      log(t('dev.admin.log.deleted', { id }), 'win');
+      toast.push({ title: t('dev.admin.toast.deleted'), description: id, tone: 'win' });
       setGameId('');
       setConfirm(false);
     } catch (e) {
-      log(`admin: delete ${id} failed: ${errMsg(e)}`, 'loss');
-      toast.push({ title: 'Delete failed', description: errMsg(e), tone: 'loss' });
+      log(t('dev.admin.log.failed', { id, error: errMsg(e) }), 'loss');
+      toast.push({ title: t('dev.admin.toast.failed'), description: errMsg(e), tone: 'loss' });
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Panel title="Admin" headerRight={<Badge tone="accent" dot>admin</Badge>}>
+    <Panel
+      title={t('dev.admin.title')}
+      headerRight={
+        <Badge tone="accent" dot>
+          {t('dev.admin.badge')}
+        </Badge>
+      }
+    >
       <div className={s.stack}>
-        <Panel padding="sm" tone="elevated" title="Rebuild stats / global snapshot">
+        <Panel padding="sm" tone="elevated" title={t('dev.admin.rebuildTitle')}>
           <div className={s.stack}>
-            <p className={s.muted}>Reserved for the &gt;5k games fallback (precomputed global snapshot). Not implemented yet.</p>
+            <p className={s.muted}>{t('dev.admin.rebuildDesc')}</p>
             <div>
               <Button size="sm" variant="subtle" disabled>
-                Rebuild snapshot
+                {t('dev.admin.rebuildButton')}
               </Button>
             </div>
           </div>
         </Panel>
 
-        <Panel padding="sm" tone="elevated" title="Delete any game by id">
+        <Panel padding="sm" tone="elevated" title={t('dev.admin.deleteTitle')}>
           <div className={s.stack}>
             <TextField
-              label="Game id"
+              label={t('dev.admin.gameId')}
               value={gameId}
               onChange={setGameId}
               placeholder="games/{id}"
               disabled={busy}
               inputProps={{ spellCheck: false, autoComplete: 'off', autoCapitalize: 'off' }}
-              hint="Rules must allow admins to delete games they do not own."
+              hint={t('dev.admin.gameIdHint')}
             />
             <div>
               <Button size="sm" variant="danger" onClick={() => setConfirm(true)} disabled={!id || busy}>
-                Delete game
+                {t('dev.admin.deleteGame')}
               </Button>
             </div>
           </div>
@@ -396,12 +426,12 @@ function AdminPanel({ log }: { log: Log }) {
         open={confirm}
         onClose={() => (busy ? undefined : setConfirm(false))}
         onConfirm={onDelete}
-        title="Delete game"
-        confirmLabel="Delete"
+        title={t('dev.admin.deleteGame')}
+        confirmLabel={t('common.actions.delete')}
         danger
         loading={busy}
       >
-        Permanently deletes <code>games/{id}</code>, whoever owns it.
+        {fill(t('dev.admin.deleteBody'), { path: <code>games/{id}</code> })}
       </ConfirmDialog>
     </Panel>
   );
@@ -410,6 +440,7 @@ function AdminPanel({ log }: { log: Log }) {
 /* ------------------------------------------------------------------------ */
 
 function EmulatorPanel({ log }: { log: Log }) {
+  const { t } = useT();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
   const projectId = import.meta.env.VITE_FB_PROJECT_ID;
@@ -418,29 +449,37 @@ function EmulatorPanel({ log }: { log: Log }) {
     setBusy(true);
     const url = `http://127.0.0.1:8080/emulator/v1/projects/${projectId}/databases/(default)/documents`;
     try {
-      log(`emulator: DELETE ${url}`, 'warn');
+      log(t('dev.emulator.log.request', { url }), 'warn');
       const res = await fetch(url, { method: 'DELETE' });
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-      log('emulator database wiped', 'win');
-      toast.push({ title: 'Emulator database nuked', tone: 'win' });
+      log(t('dev.emulator.log.wiped'), 'win');
+      toast.push({ title: t('dev.emulator.toast.nuked'), tone: 'win' });
     } catch (e) {
-      log(`emulator nuke failed: ${errMsg(e)}`, 'loss');
-      toast.push({ title: 'Nuke failed', description: errMsg(e), tone: 'loss' });
+      log(t('dev.emulator.log.failed', { error: errMsg(e) }), 'loss');
+      toast.push({ title: t('dev.emulator.toast.failed'), description: errMsg(e), tone: 'loss' });
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Panel title="Emulator" tone="accent" headerRight={<Badge tone="warn" dot>local</Badge>}>
+    <Panel
+      title={t('dev.emulator.title')}
+      tone="accent"
+      headerRight={
+        <Badge tone="warn" dot>
+          {t('dev.emulator.badge')}
+        </Badge>
+      }
+    >
       <div className={s.stack}>
         <TerminalLine tone="warn" prompt="!">
-          connected to local emulators — auth 127.0.0.1:9099 · firestore 127.0.0.1:8080
+          {t('dev.emulator.connected')}
         </TerminalLine>
-        <p className={s.muted}>Wipes every document in the emulator's Firestore (project {projectId}). Local only; nothing touches production.</p>
+        <p className={s.muted}>{t('dev.emulator.desc', { project: String(projectId) })}</p>
         <div className={s.row}>
           <Button variant="danger" onClick={() => void nuke()} loading={busy}>
-            Nuke emulator database
+            {t('dev.emulator.nuke')}
           </Button>
         </div>
       </div>

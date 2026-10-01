@@ -19,16 +19,18 @@ import {
   useToast,
 } from '@/components/ui';
 import { ProtocolCard } from '@/components/protocol';
+import { useT } from '@/i18n';
 import { useGame } from '@/hooks/useGames';
 import { useGamesStore } from '@/store/gamesStore';
 import { useUid } from '@/hooks/useAuth';
 import { usePlayerLabel } from '@/hooks/usePlayers';
 import { deleteGame } from '@/repo/games';
-import { formatDateTime, formatRelative, ownerPseudonym, sideLabel } from './gameUtils';
+import { formatRelative, ownerPseudonym, sideLabel } from './gameUtils';
 import { useNow } from './useNow';
 import s from './GameDetailPage.module.css';
 
 export default function GameDetailPage() {
+  const { t } = useT();
   const { id } = useParams();
   const game = useGame(id);
   const ready = useGamesStore((st) => st.ready);
@@ -36,7 +38,7 @@ export default function GameDetailPage() {
   if (!game && !ready) {
     return (
       <div className={s.center}>
-        <Spinner size={28} label="Loading game" />
+        <Spinner size={28} label={t('games.detail.loading')} />
       </div>
     );
   }
@@ -44,11 +46,11 @@ export default function GameDetailPage() {
     return (
       <EmptyState
         icon={<IconList />}
-        title="Not found"
-        lines={['no game at this address.', { text: 'it may have been deleted, or never compiled.', tone: 'muted' }]}
+        title={t('games.notFound.title')}
+        lines={[t('games.notFound.line1'), { text: t('games.notFound.line2'), tone: 'muted' }]}
         action={
           <Button to="/games" variant="ghost">
-            All games
+            {t('games.notFound.allGames')}
           </Button>
         }
       />
@@ -58,6 +60,7 @@ export default function GameDetailPage() {
 }
 
 function GameDetail({ game }: { game: GameDoc }) {
+  const { t, locale, dateTime } = useT();
   const uid = useUid();
   const label = usePlayerLabel();
   const navigate = useNavigate();
@@ -76,12 +79,12 @@ function GameDetail({ game }: { game: GameDoc }) {
     setDeleting(true);
     try {
       await deleteGame(game.id);
-      toast.push({ title: 'Game deleted', tone: 'default' });
+      toast.push({ title: t('games.detail.toast.deleted'), tone: 'default' });
       navigate('/games', { replace: true });
     } catch (e) {
       setDeleting(false);
       setConfirm(false);
-      toast.push({ title: 'Could not delete', description: (e as Error).message, tone: 'loss' });
+      toast.push({ title: t('games.detail.toast.deleteFailed'), description: (e as Error).message, tone: 'loss' });
     }
   };
 
@@ -91,37 +94,39 @@ function GameDetail({ game }: { game: GameDoc }) {
         as="h1"
         right={
           <span className={s.headRight}>
-            {game.isTestData ? <Badge tone="warn">test</Badge> : null}
-            <time dateTime={playedAt.toISOString()} title={formatDateTime(playedAt)}>
-              {formatRelative(playedAt, now)}
+            {game.isTestData ? <Badge tone="warn">{t('games.card.test')}</Badge> : null}
+            <time dateTime={playedAt.toISOString()} title={dateTime(playedAt)}>
+              {formatRelative(playedAt, locale, now)}
             </time>
           </span>
         }
       >
-        Game
+        {t('games.detail.title')}
       </SectionHeader>
 
       <TerminalLine tone="win" prompt=">" className={s.banner}>
-        compile successful — <strong>{winnerName}</strong> wins
+        {t('games.detail.bannerPrefix')}
+        <strong>{winnerName}</strong>
+        {t('games.detail.bannerSuffix')}
       </TerminalLine>
 
       <div className={s.sides}>
         <SidePanel game={game} side="p1" size={wide ? 'lg' : 'md'} />
         <div className={s.vs} aria-hidden="true">
-          vs
+          {t('games.card.vs')}
         </div>
         <SidePanel game={game} side="p2" size={wide ? 'lg' : 'md'} />
       </div>
 
-      <Panel title="Meta" padding="sm" tone="elevated">
+      <Panel title={t('games.detail.meta.title')} padding="sm" tone="elevated">
         <dl className={s.meta}>
-          <dt>played at</dt>
-          <dd>{formatDateTime(playedAt)}</dd>
-          <dt>first player</dt>
-          <dd>{firstName ?? <span className={s.dim}>unknown</span>}</dd>
-          <dt>recorded by</dt>
-          <dd>{isOwner ? 'you' : <span className="mono">{ownerPseudonym(game.ownerUid)}</span>}</dd>
-          <dt>game id</dt>
+          <dt>{t('games.detail.meta.playedAt')}</dt>
+          <dd>{dateTime(playedAt)}</dd>
+          <dt>{t('games.detail.meta.firstPlayer')}</dt>
+          <dd>{firstName ?? <span className={s.dim}>{t('games.detail.meta.unknown')}</span>}</dd>
+          <dt>{t('games.detail.meta.recordedBy')}</dt>
+          <dd>{isOwner ? t('games.detail.meta.you') : <span className="mono">{ownerPseudonym(game.ownerUid)}</span>}</dd>
+          <dt>{t('games.detail.meta.gameId')}</dt>
           <dd className="mono">{game.id}</dd>
         </dl>
       </Panel>
@@ -129,10 +134,10 @@ function GameDetail({ game }: { game: GameDoc }) {
       {isOwner ? (
         <div className={s.actions}>
           <Button to={`/games/${game.id}/edit`} variant="ghost" iconLeft={<IconEdit />}>
-            Edit
+            {t('common.actions.edit')}
           </Button>
           <Button variant="danger" iconLeft={<IconTrash />} onClick={() => setConfirm(true)}>
-            Delete
+            {t('common.actions.delete')}
           </Button>
         </div>
       ) : null}
@@ -141,36 +146,41 @@ function GameDetail({ game }: { game: GameDoc }) {
         open={confirm}
         onClose={() => (deleting ? undefined : setConfirm(false))}
         onConfirm={onDelete}
-        title="Delete game?"
-        confirmLabel="Delete"
+        title={t('games.detail.deleteDialog.title')}
+        confirmLabel={t('common.actions.delete')}
         danger
         loading={deleting}
       >
-        This removes the game and its result from every statistic. There is no undo.
+        {t('games.detail.deleteDialog.body')}
       </ConfirmDialog>
     </div>
   );
 }
 
 function SidePanel({ game, side, size }: { game: GameDoc; side: SideKey; size: 'md' | 'lg' }) {
+  const { t } = useT();
   const label = usePlayerLabel();
   const data = side === 'p1' ? game.p1 : game.p2;
   const won = game.winner === side;
   const first = game.firstPlayer === side;
   const compiled = new Set(data.compiled);
+  const name = sideLabel(game, side, label);
 
   return (
-    <section className={cx(s.side, won && s.sideWon)} aria-label={`${sideLabel(game, side, label)} — ${won ? 'winner' : `compiled ${data.compiled.length} of 3`}`}>
+    <section
+      className={cx(s.side, won && s.sideWon)}
+      aria-label={won ? t('games.detail.sideAriaWinner', { name }) : t('games.detail.sideAriaCompiled', { name, compiled: data.compiled.length })}
+    >
       <header className={s.sideHead}>
         <span className={s.sideKey}>{side === 'p1' ? 'P1' : 'P2'}</span>
-        <span className={cx(s.sideName, won && s.sideNameWon)}>{sideLabel(game, side, label)}</span>
+        <span className={cx(s.sideName, won && s.sideNameWon)}>{name}</span>
         <span className={s.sideBadges}>
           {first ? (
-            <Badge mono title="Went first">
-              1st
+            <Badge mono title={t('games.card.wentFirst')}>
+              {t('games.card.first')}
             </Badge>
           ) : null}
-          {won ? <Badge tone="win">winner</Badge> : <Badge mono>{data.compiled.length} / 3</Badge>}
+          {won ? <Badge tone="win">{t('games.card.winner')}</Badge> : <Badge mono>{t('games.card.compiledOf', { compiled: data.compiled.length })}</Badge>}
         </span>
       </header>
       <div className={s.cards}>

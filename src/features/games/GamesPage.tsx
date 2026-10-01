@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import type { Scope, SetId } from '@/types';
 import { PROTOCOLS } from '@/data/protocols';
 import { ALL_SET_IDS, SETS } from '@/data/sets';
@@ -15,6 +15,7 @@ import {
   Skeleton,
   TerminalLine,
 } from '@/components/ui';
+import { useT } from '@/i18n';
 import { useUid } from '@/hooks/useAuth';
 import { usePlayers } from '@/hooks/usePlayers';
 import { useGamesStore } from '@/store/gamesStore';
@@ -29,17 +30,8 @@ const PAGE = 50;
 const isScope = (v: string | null): v is Scope => v === 'mine' || v === 'all';
 const isSetId = (v: string): v is SetId => (ALL_SET_IDS as string[]).includes(v);
 
-/** Protocols grouped by set, for the `<optgroup>` select. */
-const PROTOCOL_OPTIONS = [
-  { value: '', label: 'All protocols' },
-  ...SETS.flatMap((set) =>
-    PROTOCOLS.filter((p) => p.set === set.id)
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((p) => ({ value: p.id, label: p.name, group: set.short })),
-  ),
-];
-
 export default function GamesPage() {
+  const { t, number, protocolName, sortProtocols, setName, setShort } = useT();
   const uid = useUid();
   const { players } = usePlayers();
   const ready = useGamesStore((st) => st.ready);
@@ -87,9 +79,22 @@ export default function GamesPage() {
   };
 
   const playerOptions = [
-    { value: '', label: 'All players' },
-    ...players.map((p) => ({ value: p.id, label: p.archived ? `${p.name} (archived)` : p.name })),
+    { value: '', label: t('games.list.filters.allPlayers') },
+    ...players.map((p) => ({ value: p.id, label: p.archived ? `${p.name} (${t('common.game.archived')})` : p.name })),
   ];
+
+  /** Protocols grouped by set, for the `<optgroup>` select; names and order follow the app language. */
+  const protocolOptions = useMemo(
+    () => [
+      { value: '', label: t('games.list.filters.allProtocols') },
+      ...SETS.flatMap((set) =>
+        sortProtocols(PROTOCOLS.filter((p) => p.set === set.id)).map((p) => ({ value: p.id, label: protocolName(p), group: setShort(set) })),
+      ),
+    ],
+    [t, sortProtocols, protocolName, setShort],
+  );
+
+  const setOptions = [{ value: '', label: t('games.list.filters.allSets') }, ...SETS.map((st) => ({ value: st.id, label: setName(st) }))];
 
   return (
     <div className={s.page}>
@@ -97,39 +102,40 @@ export default function GamesPage() {
         as="h1"
         right={
           <span className={s.headRight}>
-            {hasPendingWrites ? <Badge mono tone="accent" dot>syncing…</Badge> : fromCache ? <Badge mono>cached</Badge> : null}
-            {ready ? <span className={s.count}>{games.length}</span> : null}
+            {hasPendingWrites ? (
+              <Badge mono tone="accent" dot>
+                {t('common.status.syncing')}
+              </Badge>
+            ) : fromCache ? (
+              <Badge mono>{t('common.status.cached')}</Badge>
+            ) : null}
+            {ready ? <span className={s.count}>{number(games.length)}</span> : null}
           </span>
         }
       >
-        Games
+        {t('games.list.title')}
       </SectionHeader>
 
       <div className={s.toolbar}>
         <SegmentedControl<Scope>
-          label="Scope"
+          label={t('common.scope.label')}
           value={scope}
           onChange={setScope}
           options={[
-            { value: 'mine', label: 'Mine' },
-            { value: 'all', label: 'All' },
+            { value: 'mine', label: t('common.scope.mine') },
+            { value: 'all', label: t('common.scope.all') },
           ]}
         />
         <Button to="/games/new" size="sm" iconLeft={<IconPlus />} className={s.newBtn}>
-          New game
+          {t('games.list.newGame')}
         </Button>
       </div>
 
       <div className={s.filters}>
-        {scope === 'mine' ? <Select label="Player" value={playerId} onChange={setPlayerId} options={playerOptions} /> : null}
-        <Select label="Protocol" value={protocolId} onChange={setProtocolId} options={PROTOCOL_OPTIONS} />
-        <Select
-          label="Set"
-          value={setId}
-          onChange={setSetId}
-          options={[{ value: '', label: 'All sets' }, ...SETS.map((st) => ({ value: st.id, label: st.name }))]}
-        />
-        <Checkbox className={s.check} label="Include test data" checked={includeTest} onChange={setIncludeTest} />
+        {scope === 'mine' ? <Select label={t('games.list.filters.player')} value={playerId} onChange={setPlayerId} options={playerOptions} /> : null}
+        <Select label={t('games.list.filters.protocol')} value={protocolId} onChange={setProtocolId} options={protocolOptions} />
+        <Select label={t('games.list.filters.set')} value={setId} onChange={setSetId} options={setOptions} />
+        <Checkbox className={s.check} label={t('games.list.filters.includeTestData')} checked={includeTest} onChange={setIncludeTest} />
       </div>
 
       {!ready ? (
@@ -141,25 +147,25 @@ export default function GamesPage() {
       ) : unfiltered.length === 0 ? (
         <EmptyState
           icon={<IconList />}
-          title="No games yet"
+          title={t('games.list.empty.title')}
           lines={
             scope === 'mine'
-              ? ['no games recorded.', { text: 'compile your first match to start the log.', tone: 'muted' }]
-              : ['the shared log is empty.', { text: 'nobody has recorded a game yet.', tone: 'muted' }]
+              ? [t('games.list.empty.mineLine1'), { text: t('games.list.empty.mineLine2'), tone: 'muted' }]
+              : [t('games.list.empty.allLine1'), { text: t('games.list.empty.allLine2'), tone: 'muted' }]
           }
           action={
             <Button iconLeft={<IconPlus />} to="/games/new">
-              New game
+              {t('games.list.newGame')}
             </Button>
           }
         />
       ) : games.length === 0 ? (
         <EmptyState
           compact
-          lines={['nothing matches these filters.']}
+          lines={[t('games.list.empty.noMatch')]}
           action={
             <Button variant="ghost" size="sm" onClick={resetFilters}>
-              Reset filters
+              {t('games.list.filters.reset')}
             </Button>
           }
         />
@@ -168,16 +174,14 @@ export default function GamesPage() {
           <GameList games={visible} />
           {hasMore ? (
             <div className={s.more}>
-              <TerminalLine tone="muted">
-                showing {visible.length} of {games.length}
-              </TerminalLine>
+              <TerminalLine tone="muted">{t('games.list.showing', { shown: visible.length, total: games.length })}</TerminalLine>
               <Button variant="ghost" onClick={() => setPage({ key, n: shown + PAGE })}>
-                Load more
+                {t('common.actions.loadMore')}
               </Button>
             </div>
           ) : filtersActive ? (
             <TerminalLine tone="muted" className={s.foot}>
-              {games.length} of {unfiltered.length} games match.
+              {t('games.list.matchCount', { count: games.length, total: unfiltered.length })}
             </TerminalLine>
           ) : null}
         </>
@@ -188,6 +192,7 @@ export default function GamesPage() {
 
 /** Newest first with a small month separator whenever `yearMonth` changes. */
 function GameList({ games }: { games: ReturnType<typeof useStats>['games'] }) {
+  const { yearMonth } = useT();
   const out: ReactNode[] = [];
   let month = '';
   for (const g of games) {
@@ -195,7 +200,7 @@ function GameList({ games }: { games: ReturnType<typeof useStats>['games'] }) {
       month = g.yearMonth;
       out.push(
         <SectionHeader key={`m-${month}`} size="sm" as="h2" className={s.month}>
-          {month}
+          {yearMonth(month, { month: 'long', year: 'numeric' })}
         </SectionHeader>,
       );
     }

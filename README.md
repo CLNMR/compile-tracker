@@ -26,7 +26,7 @@ Firebase project: `compile-tracker-cln` (see `.firebaserc`). The Firebase CLI ac
 | `npm run dev` | Dev server against the real Firebase project |
 | `npm run dev:emu` | Dev server against local emulators (start them with `npm run emulators`) |
 | `npm run build` | Type-check + production build into `dist/` |
-| `npm run test` | Unit tests (stats engine, generator, filters) |
+| `npm run test` | Unit tests (stats engine, generator, filters, i18n catalogue parity) |
 | `npm run test:rules` | Firestore security-rules tests in the emulator |
 | `npm run gen:icons` | Regenerate PWA icons from `public/logo.svg` |
 | `npm run deploy` | Build and deploy Hosting + Firestore rules/indexes |
@@ -40,6 +40,12 @@ Firebase project: `compile-tracker-cln` (see `.firebaserc`). The Firebase CLI ac
 - `src/stats` — pure fold → merge → derive functions; stats are computed on read. See `PLAN.md` §4.2 for the reasoning and the fallback (precomputed `stats/global`) when the collection grows past ~5k games.
 - `src/components/ui` — design system derived from the Compile rulebook look. `src/components/protocol` — protocol cards and picker.
 - `src/features/*` — pages. `/dev` has test-data generation and reset tools; `/dev/ui` is the component kitchen sink.
+
+## Languages
+
+The UI and the protocol names are available in **English** and **German**. The language is inferred from the browser (`navigator.languages`, first supported match, English fallback) and can be overridden per device in **Settings → Language**; the choice is stored in `localStorage` (`compile.locale`).
+
+Adding a string: put the English text in `src/i18n/messages/en/<namespace>.ts`, the German text in `src/i18n/messages/de/<namespace>.ts` (its type is derived from the English file, so a missing key is a compile error), and render it with `const { t } = useT()` → `t('namespace.key', { param })`. Plurals use `key_one`/`key_other` and a `count` param. Protocol names come from `protocolName(id)`; the German list lives in `src/i18n/names.ts`. `npm run test` checks that both catalogues have the same keys and placeholders.
 
 ## Data & privacy
 

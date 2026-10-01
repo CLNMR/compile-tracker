@@ -1,12 +1,18 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { getProtocol } from '@/data/protocols';
 import { SET_BY_ID } from '@/data/sets';
+import { useT } from '@/i18n';
 import { cx } from '@/components/ui/cx';
 import { IconCheck } from '@/components/ui/icons';
 import s from './ProtocolCard.module.css';
 
 export type ProtocolCardSize = 'sm' | 'md' | 'lg';
 export type ProtocolCardState = 'loading' | 'compiled';
+
+/** Names longer than this (per size) get a tighter, wrapping name tab; the 46px sm tab fits ~6 Orbitron caps. */
+const LONG_NAME: Record<ProtocolCardSize, number> = { sm: 6, md: 8, lg: 9 };
+/** "COMPILED" fits every face as-is; "KOMPILIERT" needs tighter tracking. */
+const LONG_COMPILED = 8;
 
 export interface ProtocolCardProps {
   protocolId: string;
@@ -44,8 +50,12 @@ export function ProtocolCard({
   title,
   style,
 }: ProtocolCardProps) {
+  const { t, protocolName, setShort } = useT();
   const p = getProtocol(protocolId);
   const set = SET_BY_ID[p.set];
+  const name = protocolName(p);
+  const longName = name.length > LONG_NAME[size] || undefined;
+  const compiledText = t('common.game.compiled');
   const isButton = interactive || !!onClick;
   const vars = { '--p': p.colors.primary, '--s': p.colors.secondary, ...style } as CSSProperties;
   const cls = cx(
@@ -64,7 +74,9 @@ export function ProtocolCard({
       <div className={s.inner}>
         <div className={cx(s.face, s.front)}>
           <div className={s.art} aria-hidden="true" />
-          <div className={s.tab}>{p.name}</div>
+          <div className={s.tab} data-long={longName}>
+            {name}
+          </div>
           {size !== 'sm' ? (
             <div className={s.hex} aria-hidden="true">
               <span className={s.hexGlyph}>{p.glyph}</span>
@@ -73,15 +85,19 @@ export function ProtocolCard({
           <div className={s.value} aria-hidden={value == null ? true : undefined}>
             {value ?? p.glyph}
           </div>
-          {state === 'loading' ? <div className={s.status}>Loading…</div> : null}
-          {showSet && size !== 'sm' ? <div className={s.set}>{set.short}</div> : null}
+          {state === 'loading' ? <div className={s.status}>{t('common.game.loading')}</div> : null}
+          {showSet && size !== 'sm' ? <div className={s.set}>{setShort(set)}</div> : null}
         </div>
         <div className={cx(s.face, s.back)} aria-hidden={state !== 'compiled' ? true : undefined}>
           <div className={cx(s.art, s.artDim)} aria-hidden="true" />
-          <div className={s.tab}>{p.name}</div>
+          <div className={s.tab} data-long={longName}>
+            {name}
+          </div>
           <div className={s.compiledMark}>
             <IconCheck size={size === 'sm' ? 16 : 28} strokeWidth={2.5} />
-            <span className={s.compiledText}>Compiled</span>
+            <span className={s.compiledText} data-long={compiledText.length > LONG_COMPILED || undefined}>
+              {compiledText}
+            </span>
           </div>
         </div>
       </div>
@@ -94,7 +110,9 @@ export function ProtocolCard({
     </>
   );
 
-  const label = `${p.name}${state === 'compiled' ? ', compiled' : ''}${overlayLabel ? `, ${overlayLabel.toLowerCase()}` : ''}`;
+  const label = [name, state === 'compiled' ? compiledText.toLowerCase() : null, overlayLabel?.toLowerCase()]
+    .filter(Boolean)
+    .join(', ');
 
   if (isButton) {
     return (
@@ -106,14 +124,14 @@ export function ProtocolCard({
         disabled={disabled}
         aria-pressed={selected != null ? selected : undefined}
         aria-label={label}
-        title={title ?? p.name}
+        title={title ?? name}
       >
         {content}
       </button>
     );
   }
   return (
-    <div className={cls} style={vars} aria-label={label} role="img" title={title ?? p.name}>
+    <div className={cls} style={vars} aria-label={label} role="img" title={title ?? name}>
       {content}
     </div>
   );

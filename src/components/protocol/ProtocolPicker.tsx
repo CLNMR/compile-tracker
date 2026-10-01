@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { SetId } from '@/types';
 import { protocolsInSets, type ProtocolDef } from '@/data/protocols';
 import { SETS } from '@/data/sets';
+import { useT } from '@/i18n';
 import { cx } from '@/components/ui/cx';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { TextField } from '@/components/ui/TextField';
@@ -19,6 +20,7 @@ export interface ProtocolPickerProps {
   max?: number;
   /** Ids taken by the other side: shown disabled with a "taken" overlay. */
   excluded?: string[];
+  /** Defaults to the localized "Protocols". */
   title?: ReactNode;
   /** `auto` uses sm below 640px and md above. */
   cardSize?: ProtocolCardSize | 'auto';
@@ -33,11 +35,12 @@ export function ProtocolPicker({
   onChange,
   max = 3,
   excluded = [],
-  title = 'Protocols',
+  title,
   cardSize = 'auto',
   search = true,
   className,
 }: ProtocolPickerProps) {
+  const { t, protocolName, sortProtocols, setName, setShort, number } = useT();
   const [q, setQ] = useState('');
   const [shake, setShake] = useState(false);
   const [notice, setNotice] = useState('');
@@ -50,11 +53,14 @@ export function ProtocolPicker({
     return () => window.clearTimeout(t);
   }, [shake]);
 
+  // Matches the localized name or the English one (ids double as English names), sorted by localized name.
   const groups = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    const all = protocolsInSets(enabledSets).filter((p) => !needle || p.name.toLowerCase().includes(needle));
-    return SETS.map((set) => ({ set, items: all.filter((p) => p.set === set.id) })).filter((g) => g.items.length > 0);
-  }, [enabledSets, q]);
+    const all = protocolsInSets(enabledSets).filter(
+      (p) => !needle || protocolName(p).toLowerCase().includes(needle) || p.name.toLowerCase().includes(needle),
+    );
+    return SETS.map((set) => ({ set, items: sortProtocols(all.filter((p) => p.set === set.id)) })).filter((g) => g.items.length > 0);
+  }, [enabledSets, q, protocolName, sortProtocols]);
 
   const excludedSet = useMemo(() => new Set(excluded), [excluded]);
   const selectedSet = useMemo(() => new Set(value), [value]);
@@ -68,7 +74,7 @@ export function ProtocolPicker({
     }
     if (full) {
       setShake(true);
-      setNotice(`Maximum of ${max} protocols selected. Deselect one first.`);
+      setNotice(t('protocol.picker.maxReached', { max }));
       return;
     }
     onChange([...value, p.id].sort());
@@ -79,21 +85,25 @@ export function ProtocolPicker({
     <div className={cx(s.root, className)}>
       <SectionHeader
         right={
-          <span className={cx(s.counter, full && s.counterFull, shake && s.shake)} aria-live="polite">
-            {value.length} / {max}
+          <span
+            className={cx(s.counter, full && s.counterFull, shake && s.shake)}
+            aria-live="polite"
+            aria-label={t('protocol.picker.selected', { count: value.length, max })}
+          >
+            {number(value.length)} / {number(max)}
           </span>
         }
       >
-        {title}
+        {title ?? t('protocol.picker.title')}
       </SectionHeader>
 
       {search ? (
         <TextField
-          placeholder="Search protocols…"
+          placeholder={t('protocol.picker.search')}
           value={q}
           onChange={setQ}
           leading={<IconSearch />}
-          inputProps={{ type: 'search', autoComplete: 'off', 'aria-label': 'Search protocols' }}
+          inputProps={{ type: 'search', autoComplete: 'off', 'aria-label': t('protocol.picker.searchLabel') }}
         />
       ) : null}
 
@@ -104,15 +114,15 @@ export function ProtocolPicker({
       <div className={cx(s.groups, shake && s.shakeSoft)}>
         {groups.length === 0 ? (
           <TerminalLine tone="muted" cursor>
-            no protocol matches “{q.trim()}”
+            {t('protocol.picker.noMatch', { query: q.trim() })}
           </TerminalLine>
         ) : null}
         {groups.map(({ set, items }) => (
-          <section key={set.id} className={s.group} aria-label={set.name}>
-            <SectionHeader size="sm" as="h3" right={<span className={s.groupCount}>{items.length}</span>}>
-              {set.short}
+          <section key={set.id} className={s.group} aria-label={setName(set)}>
+            <SectionHeader size="sm" as="h3" right={<span className={s.groupCount}>{number(items.length)}</span>}>
+              {setShort(set)}
             </SectionHeader>
-            <div className={cx(s.grid, s[`grid-${size}`])} role="group" aria-label={`${set.short} protocols`}>
+            <div className={cx(s.grid, s[`grid-${size}`])} role="group" aria-label={t('protocol.picker.setGroup', { set: setShort(set) })}>
               {items.map((p) => {
                 const taken = excludedSet.has(p.id);
                 const selected = selectedSet.has(p.id);
@@ -123,7 +133,7 @@ export function ProtocolPicker({
                     size={size}
                     selected={selected}
                     disabled={taken}
-                    overlayLabel={taken ? 'Taken' : undefined}
+                    overlayLabel={taken ? t('protocol.card.taken') : undefined}
                     onClick={() => toggle(p)}
                     className={cx(s.card, full && !selected && !taken && s.cardBlocked)}
                   />

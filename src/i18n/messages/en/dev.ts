@@ -1,0 +1,130 @@
+/** /dev developer tools page and the emulator banner. Admin-only, but fully translated. */
+export const dev = {
+  title: 'Developer tools',
+  warning: 'these actions write to the shared database',
+  ready: 'developer tools ready.',
+  log: 'Log',
+  emulatorBanner: 'Emulator mode · 127.0.0.1',
+
+  generate: {
+    title: 'Generate test data',
+    protocolCount_one: '{count} protocol',
+    protocolCount_other: '{count} protocols',
+    games: 'Games',
+    players: 'Players',
+    days: 'Days',
+    seed: 'Seed',
+    reroll: 'reroll',
+    range: '{min}–{max}',
+    seedError: 'non-negative integer',
+    hint: 'Uses players named {names}, … (created if missing) and the protocol sets enabled in Settings. Games are flagged as test data. Same seed → identical games.',
+    tooFew: 'only {count} protocols enabled — enable sets in Settings until at least {min} are available',
+    run: 'Generate',
+    running: 'Generating',
+    writing: 'writing…',
+    log: {
+      start: 'generate: {games} games · {players} players · {days} days · seed {seed} · sets {sets}',
+      players: 'players: {existing} existing, {missing} to create',
+      created: 'created {names}',
+      generated: 'generated {count} games, writing in batches of 400…',
+      wrote: 'wrote {n} / {total}',
+      done: 'done — {count} test games written',
+      failed: 'generate failed: {error}',
+    },
+    toast: {
+      done: 'Test data generated',
+      doneDesc: '{games} games · {players} players',
+      failed: 'Generation failed',
+    },
+  },
+
+  reset: {
+    title: 'Reset',
+    test: {
+      desc: 'Removes games you own that are flagged as test data. Players and real games stay.',
+      button: 'Delete my test data',
+      confirm: 'Delete test games',
+      /** `{flag}` is rendered as `<code>isTestData = true</code>`. */
+      body: 'Deletes all games you own with {flag}. Your players and real games are untouched. There is no undo.',
+    },
+    all: {
+      desc: 'Removes every game and player you own. Optionally resets your settings too.',
+      button: 'Delete ALL my data',
+      confirm: 'Delete everything',
+      body: 'Deletes every game and every player under your identity — test data and real games alike. There is no undo.',
+      alsoSettings: 'Also reset my settings',
+      alsoSettingsDesc: 'Enabled sets and default player go back to defaults',
+    },
+    global: {
+      desc: 'Removes test-flagged games from every user. The security rules allow this for everyone.',
+      button: 'Purge global test data',
+      confirm: 'Purge',
+      /** `{all}` → `<strong>{allUsers}</strong>`, `{flag}` → `<code>isTestData</code>`. */
+      body: 'Deletes test-flagged games from {all}, not just yours. The Firestore rules permit any signed-in user to delete {flag} games, so this is safe for real data but affects everyone’s test sets.',
+      allUsers: 'all users',
+    },
+    log: {
+      testStart: 'reset: deleting my test games…',
+      deleted: 'deleted {count}',
+      testDone: 'removed {count} test games',
+      allStart: 'reset: deleting ALL my games…',
+      gamesRemoved: 'removed {count} games',
+      playersRemoved: 'removed {count} players',
+      settingsReset: 'settings reset to defaults',
+      defaultPlayerCleared: 'cleared default player',
+      allDone: 'done — {games} games, {players} players removed',
+      allDoneSettings: 'done — {games} games, {players} players, settings removed',
+      globalStart: 'purge: deleting test games from ALL users…',
+      globalDone: 'purged {count} global test games',
+      failed: 'reset failed: {error}',
+    },
+    toast: {
+      testDone: 'Test data deleted',
+      gamesRemoved_one: '{count} game removed',
+      gamesRemoved_other: '{count} games removed',
+      allDone: 'All my data deleted',
+      allDoneDesc: '{games} games · {players} players',
+      globalDone: 'Global test data purged',
+      failed: 'Reset failed',
+    },
+  },
+
+  admin: {
+    title: 'Admin',
+    badge: 'admin',
+    rebuildTitle: 'Rebuild stats / global snapshot',
+    rebuildDesc: 'Reserved for the >5k games fallback (precomputed global snapshot). Not implemented yet.',
+    rebuildButton: 'Rebuild snapshot',
+    deleteTitle: 'Delete any game by id',
+    gameId: 'Game id',
+    gameIdHint: 'Rules must allow admins to delete games they do not own.',
+    deleteGame: 'Delete game',
+    /** `{path}` → `<code>games/{id}</code>`. */
+    deleteBody: 'Permanently deletes {path}, whoever owns it.',
+    log: {
+      deleted: 'admin: deleted game {id}',
+      failed: 'admin: delete {id} failed: {error}',
+    },
+    toast: {
+      deleted: 'Game deleted',
+      failed: 'Delete failed',
+    },
+  },
+
+  emulator: {
+    title: 'Emulator',
+    badge: 'local',
+    connected: 'connected to local emulators — auth 127.0.0.1:9099 · firestore 127.0.0.1:8080',
+    desc: 'Wipes every document in the emulator’s Firestore (project {project}). Local only; nothing touches production.',
+    nuke: 'Nuke emulator database',
+    log: {
+      request: 'emulator: DELETE {url}',
+      wiped: 'emulator database wiped',
+      failed: 'emulator nuke failed: {error}',
+    },
+    toast: {
+      nuked: 'Emulator database nuked',
+      failed: 'Nuke failed',
+    },
+  },
+} as const;

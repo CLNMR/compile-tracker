@@ -1,4 +1,5 @@
 import { forwardRef, useId, type InputHTMLAttributes, type ReactNode } from 'react';
+import { useT } from '@/i18n';
 import { cx } from './cx';
 import s from './Field.module.css';
 
@@ -24,6 +25,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
   { label, hint, error, leading, trailing, inputProps, className, value, onChange, placeholder, type = 'text', disabled, required },
   ref,
 ) {
+  const { t } = useT();
   const auto = useId();
   const id = inputProps?.id ?? auto;
   const hintId = hint ? `${id}-hint` : undefined;
@@ -34,7 +36,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
       {label != null ? (
         <label htmlFor={id} className={s.label}>
           {label}
-          {required ? ' *' : null}
+          {required ? <span title={t('ui.field.required')}> *</span> : null}
         </label>
       ) : null}
       <div className={s.control}>

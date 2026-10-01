@@ -2,6 +2,7 @@ import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ResponsiveContaine
 import { BarList, Panel, StatTile } from '@/components/ui';
 import { ProtocolChip } from '@/components/protocol';
 import { getProtocol, isKnownProtocol } from '@/data/protocols';
+import { useT } from '@/i18n';
 import { avgLoserCompiled, firstPlayerAdvantage, gamesOverTime, loserCompiledDistribution, protocolUsage } from '@/stats';
 import {
   axisLineStyle,
@@ -19,14 +20,14 @@ import { monthLabel, num, pct } from '../format';
 import type { StatsTabProps } from './types';
 import t from './tabs.module.css';
 
-const LOSS_LABELS: Record<0 | 1 | 2, string> = { 0: '0 compiled', 1: '1 compiled', 2: '2 compiled' };
-
 export function OverviewTab({ agg }: StatsTabProps) {
+  const { t: tr } = useT();
   const fp = firstPlayerAdvantage(agg);
   const loserAvg = avgLoserCompiled(agg);
   const distinct = Object.keys(agg.byProtocol).length;
 
-  // No manual memo: these derive calls are cheap over an already-aggregated `Agg`.
+  // No manual memo: these derive calls are cheap over an already-aggregated `Agg`,
+  // and re-running them per render keeps every label in the current locale.
   const series = gamesOverTime(agg).map((r) => ({ ...r, label: monthLabel(r.yearMonth) }));
   const usage = protocolUsage(agg)
     .filter((r) => isKnownProtocol(r.id))
@@ -38,29 +39,29 @@ export function OverviewTab({ agg }: StatsTabProps) {
         label: <ProtocolChip protocolId={r.id} size="sm" />,
         value: r.decks,
         color: `linear-gradient(90deg, ${p.colors.secondary}, ${p.colors.primary})`,
-        sub: `${pct(r.share)} of decks`,
+        sub: tr('stats.overview.shareOfDecks', { share: pct(r.share) }),
       };
     });
-  const dist = loserCompiledDistribution(agg).map((d) => ({ ...d, label: LOSS_LABELS[d.compiled] }));
+  const dist = loserCompiledDistribution(agg).map((d) => ({ ...d, label: tr('stats.overview.compiledN', { count: d.compiled }) }));
   const distColors = [chartColors.loss, chartColors.warn, chartColors.win];
 
   return (
     <div className={t.stack}>
       <div className={t.tiles}>
-        <StatTile label="Games" value={num(agg.games)} />
+        <StatTile label={tr('stats.overview.games')} value={num(agg.games)} />
         <StatTile
-          label="First-player win rate"
+          label={tr('stats.overview.fpWinRate')}
           value={fp.n > 0 ? pct(fp.rate) : '–'}
-          sub={fp.n > 0 ? `n = ${num(fp.n)}` : 'first player unknown'}
+          sub={fp.n > 0 ? tr('stats.overview.sampleN', { n: fp.n }) : tr('stats.overview.fpUnknown')}
           tone={fp.n > 0 ? (fp.rate > 0.55 ? 'warn' : fp.rate < 0.45 ? 'accent' : 'default') : 'default'}
         />
-        <StatTile label="Loser compiled (avg)" value={num(loserAvg, 2)} sub="protocols per loss" />
-        <StatTile label="Protocols seen" value={num(distinct)} sub="distinct" />
+        <StatTile label={tr('stats.overview.loserCompiledAvg')} value={num(loserAvg, 2)} sub={tr('stats.overview.perLoss')} />
+        <StatTile label={tr('stats.overview.protocolsSeen')} value={num(distinct)} sub={tr('stats.overview.distinct')} />
       </div>
 
-      <Panel title="Games over time">
+      <Panel title={tr('stats.overview.gamesOverTime')}>
         {series.length === 0 ? (
-          <div className={t.chartEmpty}>no dated games</div>
+          <div className={t.chartEmpty}>{tr('stats.overview.noDatedGames')}</div>
         ) : (
           <div className={t.chart}>
             <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
@@ -73,17 +74,18 @@ export function OverviewTab({ agg }: StatsTabProps) {
                 </defs>
                 <CartesianGrid stroke={chartColors.grid} strokeDasharray="2 4" vertical={false} />
                 <XAxis dataKey="label" tick={tickStyle} axisLine={axisLineStyle} tickLine={false} interval="preserveStartEnd" minTickGap={24} />
-                <YAxis tick={tickStyle} axisLine={false} tickLine={false} allowDecimals={false} width={40} />
+                <YAxis tick={tickStyle} axisLine={false} tickLine={false} allowDecimals={false} width={40} tickFormatter={(v) => num(Number(v))} />
                 <Tooltip
                   contentStyle={tooltipContentStyle}
                   labelStyle={tooltipLabelStyle}
                   itemStyle={tooltipItemStyle}
                   cursor={tooltipCursor}
-                  formatter={(v) => [num(Number(v)), 'games']}
+                  formatter={(v) => [num(Number(v)), tr('stats.overview.seriesGames')]}
                 />
                 <Area
                   type="monotone"
                   dataKey="games"
+                  name={tr('stats.overview.seriesGames')}
                   stroke={chartColors.accent}
                   strokeWidth={2}
                   fill="url(#statsGamesFill)"
@@ -98,17 +100,21 @@ export function OverviewTab({ agg }: StatsTabProps) {
       </Panel>
 
       <div className={t.twoCol}>
-        <Panel title="Most used protocols">
-          {usage.length === 0 ? <div className={t.empty}>no protocols</div> : <BarList items={usage} format={(v) => `${num(v)} decks`} />}
+        <Panel title={tr('stats.overview.mostUsed')}>
+          {usage.length === 0 ? (
+            <div className={t.empty}>{tr('stats.overview.noProtocols')}</div>
+          ) : (
+            <BarList items={usage} format={(v) => tr('stats.units.decks', { count: v })} />
+          )}
         </Panel>
 
-        <Panel title="How close were the losses">
+        <Panel title={tr('stats.overview.closeLosses')}>
           <div className={t.chart}>
             <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
               <BarChart data={dist} margin={chartMargin} barCategoryGap="28%">
                 <CartesianGrid stroke={chartColors.grid} strokeDasharray="2 4" vertical={false} />
                 <XAxis dataKey="label" tick={tickStyle} axisLine={axisLineStyle} tickLine={false} />
-                <YAxis tick={tickStyle} axisLine={false} tickLine={false} allowDecimals={false} width={40} />
+                <YAxis tick={tickStyle} axisLine={false} tickLine={false} allowDecimals={false} width={40} tickFormatter={(v) => num(Number(v))} />
                 <Tooltip
                   contentStyle={tooltipContentStyle}
                   labelStyle={tooltipLabelStyle}
@@ -116,10 +122,10 @@ export function OverviewTab({ agg }: StatsTabProps) {
                   cursor={tooltipBarCursor}
                   formatter={(v, _n, item) => {
                     const row = item?.payload as (typeof dist)[number] | undefined;
-                    return [`${num(Number(v))} games (${pct(row?.share ?? 0)})`, 'loser'];
+                    return [tr('stats.overview.lossTooltip', { count: Number(v), share: pct(row?.share ?? 0) }), tr('stats.overview.lossSeries')];
                   }}
                 />
-                <Bar dataKey="games" radius={[3, 3, 0, 0]} isAnimationActive={false}>
+                <Bar dataKey="games" name={tr('stats.overview.lossSeries')} radius={[3, 3, 0, 0]} isAnimationActive={false}>
                   {dist.map((d) => (
                     <Cell key={d.compiled} fill={distColors[d.compiled]} fillOpacity={0.85} />
                   ))}
@@ -127,7 +133,7 @@ export function OverviewTab({ agg }: StatsTabProps) {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <p className={t.sub}>Protocols the loser had compiled when the game ended. 2 = a close game.</p>
+          <p className={t.sub}>{tr('stats.overview.closeLossesNote')}</p>
         </Panel>
       </div>
     </div>

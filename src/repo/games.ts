@@ -18,7 +18,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/firebase/app';
 import { gameConverter } from '@/firebase/converters';
-import { yearMonthOf, type Game, type GameDoc, type GameInput, type GameSide } from '@/types';
+import { yearMonthOf, type Game, type GameDoc, type GameInput, type GameSide, type SideKey } from '@/types';
 import { isKnownProtocol } from '@/data/protocols';
 
 export const gamesCol = () => collection(db, 'games').withConverter(gameConverter);
@@ -28,31 +28,56 @@ export interface SnapshotMeta {
   hasPendingWrites: boolean;
 }
 
-/** Thrown before hitting Firestore so the UI gets a readable message. */
-export class InvalidGameError extends Error {}
+export type InvalidGameCode =
+  | 'protocolCount'
+  | 'protocolsDistinct'
+  | 'unknownProtocol'
+  | 'compiledSubset'
+  | 'playerMissing'
+  | 'samePlayer'
+  | 'sixDistinct'
+  | 'winnerIncomplete'
+  | 'loserComplete';
 
-function assertSide(side: GameSide, label: string) {
-  if (side.protocols.length !== 3) throw new InvalidGameError(`${label}: exactly 3 protocols required`);
-  if (new Set(side.protocols).size !== 3) throw new InvalidGameError(`${label}: protocols must be distinct`);
-  for (const p of side.protocols) if (!isKnownProtocol(p)) throw new InvalidGameError(`${label}: unknown protocol ${p}`);
-  for (const c of side.compiled) if (!side.protocols.includes(c)) throw new InvalidGameError(`${label}: compiled must be a subset of protocols`);
-  if (!side.playerId) throw new InvalidGameError(`${label}: player missing`);
+/**
+ * Thrown before hitting Firestore so the UI gets a readable message.
+ * `code` + `params` let the UI render a localized text (`games.errors.<code>`); `message` is the English fallback.
+ */
+export class InvalidGameError extends Error {
+  constructor(
+    public readonly code: InvalidGameCode,
+    message: string,
+    public readonly params: Readonly<Record<string, string>> = {},
+  ) {
+    super(message);
+    this.name = 'InvalidGameError';
+  }
+}
+
+function assertSide(side: GameSide, key: SideKey) {
+  const label = key === 'p1' ? 'Player 1' : 'Player 2';
+  const params = { side: key };
+  if (side.protocols.length !== 3) throw new InvalidGameError('protocolCount', `${label}: exactly 3 protocols required`, params);
+  if (new Set(side.protocols).size !== 3) throw new InvalidGameError('protocolsDistinct', `${label}: protocols must be distinct`, params);
+  for (const p of side.protocols) if (!isKnownProtocol(p)) throw new InvalidGameError('unknownProtocol', `${label}: unknown protocol ${p}`, { ...params, protocol: p });
+  for (const c of side.compiled) if (!side.protocols.includes(c)) throw new InvalidGameError('compiledSubset', `${label}: compiled must be a subset of protocols`, params);
+  if (!side.playerId) throw new InvalidGameError('playerMissing', `${label}: player missing`, params);
 }
 
 /** Build a complete, rule-valid Game from UI input. Pure — exported for tests and the generator. */
 export function buildGame(ownerUid: string, input: GameInput, createdAt: Timestamp | ReturnType<typeof serverTimestamp>): Omit<Game, 'createdAt'> & { createdAt: unknown } {
   const p1: GameSide = { playerId: input.p1.playerId, protocols: [...input.p1.protocols].sort(), compiled: [...input.p1.compiled].sort() };
   const p2: GameSide = { playerId: input.p2.playerId, protocols: [...input.p2.protocols].sort(), compiled: [...input.p2.compiled].sort() };
-  assertSide(p1, 'Player 1');
-  assertSide(p2, 'Player 2');
-  if (p1.playerId === p2.playerId) throw new InvalidGameError('A player cannot face themselves');
+  assertSide(p1, 'p1');
+  assertSide(p2, 'p2');
+  if (p1.playerId === p2.playerId) throw new InvalidGameError('samePlayer', 'A player cannot face themselves');
   const all = [...p1.protocols, ...p2.protocols].sort();
-  if (new Set(all).size !== 6) throw new InvalidGameError('Both sides must use 6 distinct protocols');
+  if (new Set(all).size !== 6) throw new InvalidGameError('sixDistinct', 'Both sides must use 6 distinct protocols');
   const winner = input.winner;
   const loser = winner === 'p1' ? p2 : p1;
   const win = winner === 'p1' ? p1 : p2;
-  if (win.compiled.length !== 3) throw new InvalidGameError('The winner must have compiled all 3 protocols');
-  if (loser.compiled.length >= 3) throw new InvalidGameError('The loser cannot have compiled all 3 protocols');
+  if (win.compiled.length !== 3) throw new InvalidGameError('winnerIncomplete', 'The winner must have compiled all 3 protocols');
+  if (loser.compiled.length >= 3) throw new InvalidGameError('loserComplete', 'The loser cannot have compiled all 3 protocols');
 
   const game: Omit<Game, 'createdAt'> & { createdAt: unknown } = {
     schemaVersion: 1,

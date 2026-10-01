@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { Badge, BarList, Chip, Dialog, Panel, StatTile } from '@/components/ui';
 import { ProtocolCard, ProtocolChip } from '@/components/protocol';
 import { getProtocol, isKnownProtocol } from '@/data/protocols';
-import { SET_BY_ID, SETS } from '@/data/sets';
+import { SETS } from '@/data/sets';
+import { useT, type TFunction } from '@/i18n';
 import { bestCombos, counterPicks, protocolCompileRate, protocolMatchups, protocolUsage, protocolWinRate, type Agg } from '@/stats';
 import type { ProtocolId, SetId } from '@/types';
 import { DataTable, NumBar, Td, TableRow, WilsonValue, type DataTableColumn } from '../Bits';
@@ -27,14 +28,14 @@ interface Row {
   compileRate: number;
 }
 
-const COLUMNS: DataTableColumn<SortKey | 'protocol' | 'set'>[] = [
-  { key: 'protocol', label: 'Protocol', width: 'minmax(150px, 1.4fr)' },
-  { key: 'set', label: 'Set', width: '76px' },
-  { key: 'usage', label: 'Decks', width: '96px', align: 'right', sortable: true },
-  { key: 'share', label: 'Usage %', width: '96px', align: 'right', sortable: true, title: 'Share of all decks' },
-  { key: 'rate', label: 'Deck win %', width: '110px', align: 'right', sortable: true },
-  { key: 'lower', label: 'Wilson', width: '84px', align: 'right', sortable: true, title: 'Wilson lower bound (95%)' },
-  { key: 'compile', label: 'Compile %', width: '110px', align: 'right', sortable: true, title: 'How often the protocol itself was compiled by its deck' },
+const columns = (tr: TFunction): DataTableColumn<SortKey | 'protocol' | 'set'>[] => [
+  { key: 'protocol', label: tr('stats.protocols.col.protocol'), width: 'minmax(150px, 1.4fr)' },
+  { key: 'set', label: tr('stats.protocols.col.set'), width: '76px' },
+  { key: 'usage', label: tr('stats.protocols.col.decks'), width: '96px', align: 'right', sortable: true },
+  { key: 'share', label: tr('stats.protocols.col.share'), width: '96px', align: 'right', sortable: true, title: tr('stats.protocols.col.shareHint') },
+  { key: 'rate', label: tr('stats.protocols.col.rate'), width: '110px', align: 'right', sortable: true },
+  { key: 'lower', label: tr('stats.wilson.label'), width: '84px', align: 'right', sortable: true, title: tr('stats.wilson.lowerBound95') },
+  { key: 'compile', label: tr('stats.protocols.col.compile'), width: '110px', align: 'right', sortable: true, title: tr('stats.protocols.col.compileHint') },
 ];
 
 function buildRows(agg: Agg, minSample: number): Row[] {
@@ -62,12 +63,14 @@ function buildRows(agg: Agg, minSample: number): Row[] {
 }
 
 export function ProtocolsTab({ agg, minSample }: StatsTabProps) {
+  const { t: tr, protocolName, setName, setShort } = useT();
   const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>({ key: 'usage', dir: 'desc' });
   const [setFilter, setSetFilter] = useState<SetId[]>([]);
   const [openId, setOpenId] = useState<ProtocolId | null>(null);
 
   const rows = useMemo(() => buildRows(agg, minSample), [agg, minSample]);
   const maxDecks = useMemo(() => Math.max(1, ...rows.map((r) => r.decks)), [rows]);
+  const cols = useMemo(() => columns(tr), [tr]);
 
   const visible = useMemo(() => {
     const filtered = setFilter.length ? rows.filter((r) => setFilter.includes(r.set)) : rows;
@@ -100,42 +103,42 @@ export function ProtocolsTab({ agg, minSample }: StatsTabProps) {
   return (
     <div className={t.stack}>
       <Panel
-        title="Protocols"
+        title={tr('stats.protocols.title')}
         padding="sm"
         headerRight={
-          <Badge mono title={`Win rate and Wilson are ranked only with ≥ ${minSample} decks`}>
-            {visible.length} · min {minSample}
+          <Badge mono title={tr('stats.protocols.rankedHint', { count: minSample })}>
+            {num(visible.length)} · {tr('stats.units.min', { count: minSample })}
           </Badge>
         }
       >
         <div className={t.stack}>
           <div className={t.chips}>
             {SETS.filter((set) => setsPresent.has(set.id)).map((set) => (
-              <Chip key={set.id} size="sm" selected={setFilter.includes(set.id)} onClick={() => toggleSet(set.id)} title={set.name}>
-                {set.short}
+              <Chip key={set.id} size="sm" selected={setFilter.includes(set.id)} onClick={() => toggleSet(set.id)} title={setName(set)}>
+                {setShort(set)}
               </Chip>
             ))}
             {setFilter.length > 0 ? (
               <Chip size="sm" onClick={() => setSetFilter([])}>
-                Clear
+                {tr('common.actions.clear')}
               </Chip>
             ) : null}
           </div>
 
           {visible.length === 0 ? (
-            <div className={t.empty}>no protocols in this selection.</div>
+            <div className={t.empty}>{tr('stats.protocols.empty')}</div>
           ) : (
-            <DataTable columns={COLUMNS} sortKey={sort.key} sortDir={sort.dir} onSort={(k) => setSort((cur) => nextSort(cur, k as SortKey))} label="Protocol stats">
+            <DataTable columns={cols} sortKey={sort.key} sortDir={sort.dir} onSort={(k) => setSort((cur) => nextSort(cur, k as SortKey))} label={tr('stats.protocols.tableLabel')}>
               {visible.map((r) => {
                 const p = getProtocol(r.id);
                 const grad = `linear-gradient(90deg, ${p.colors.secondary}, ${p.colors.primary})`;
                 return (
-                  <TableRow key={r.id} onClick={() => setOpenId(r.id)} label={`${p.name}: open details`}>
+                  <TableRow key={r.id} onClick={() => setOpenId(r.id)} label={tr('stats.protocols.openDetails', { name: protocolName(p) })}>
                     <Td>
                       <ProtocolChip protocolId={r.id} size="sm" />
                     </Td>
                     <Td>
-                      <Badge mono>{SET_BY_ID[r.set].short}</Badge>
+                      <Badge mono>{setShort(r.set)}</Badge>
                     </Td>
                     <Td align="right">
                       <NumBar label={num(r.decks)} value={r.decks} max={maxDecks} color={grad} />
@@ -143,7 +146,15 @@ export function ProtocolsTab({ agg, minSample }: StatsTabProps) {
                     <Td align="right">
                       <NumBar label={pct(r.share)} value={r.share} max={0.5} color={grad} />
                     </Td>
-                    <Td align="right" className={r.ranked ? undefined : 'muted'} title={r.ranked ? `${r.wins} / ${r.decks} decks won` : `below min sample (${r.decks} < ${minSample})`}>
+                    <Td
+                      align="right"
+                      className={r.ranked ? undefined : 'muted'}
+                      title={
+                        r.ranked
+                          ? tr('stats.protocols.wonOf', { wins: r.wins, decks: r.decks })
+                          : tr('stats.protocols.belowMin', { decks: r.decks, min: minSample })
+                      }
+                    >
                       <NumBar label={pct(r.rate)} value={r.rate} max={1} color={r.ranked ? (r.rate >= 0.5 ? 'var(--win)' : 'var(--loss)') : 'var(--text-dim)'} />
                     </Td>
                     <Td align="right">{r.ranked ? <WilsonValue value={pct(r.lower)} /> : <span className="muted mono">–</span>}</Td>
@@ -158,7 +169,7 @@ export function ProtocolsTab({ agg, minSample }: StatsTabProps) {
         </div>
       </Panel>
 
-      <Dialog open={!!openId} onClose={() => setOpenId(null)} title="Protocol detail" width={600}>
+      <Dialog open={!!openId} onClose={() => setOpenId(null)} title={tr('stats.protocols.detail.title')} width={600}>
         {openId ? <ProtocolDetail agg={agg} id={openId} minSample={minSample} row={rows.find((r) => r.id === openId)} /> : null}
       </Dialog>
     </div>
@@ -166,6 +177,7 @@ export function ProtocolsTab({ agg, minSample }: StatsTabProps) {
 }
 
 function ProtocolDetail({ agg, id, minSample, row }: { agg: Agg; id: ProtocolId; minSample: number; row?: Row }) {
+  const { t: tr } = useT();
   const matchups = useMemo(
     () =>
       protocolMatchups(agg, id)
@@ -178,10 +190,10 @@ function ProtocolDetail({ agg, id, minSample, row }: { agg: Agg; id: ProtocolId;
             value: m.rate,
             max: 1,
             color: m.rate >= 0.5 ? `linear-gradient(90deg, ${p.colors.secondary}, var(--win))` : `linear-gradient(90deg, ${p.colors.secondary}, var(--loss))`,
-            sub: `${m.games} games`,
+            sub: tr('common.game.games', { count: m.games }),
           };
         }),
-    [agg, id],
+    [agg, id, tr],
   );
   const counters = useMemo(() => counterPicks(agg, id, minSample).filter((c) => isKnownProtocol(c.id) && c.winRateAgainst > 0.5).slice(0, 6), [agg, id, minSample]);
   const pairs = useMemo(
@@ -197,18 +209,29 @@ function ProtocolDetail({ agg, id, minSample, row }: { agg: Agg; id: ProtocolId;
       <div className={t.detailHead}>
         <ProtocolCard protocolId={id} size="lg" showSet value={row ? pct(row.rate) : undefined} />
         <div className={t.detailTiles}>
-          <StatTile size="sm" label="Decks" value={num(row?.decks ?? 0)} sub={row ? `${pct(row.share)} of all` : undefined} />
-          <StatTile size="sm" label="Win rate" value={pct(row?.rate ?? 0)} tone={(row?.rate ?? 0) >= 0.5 ? 'win' : 'loss'} sub={row ? `Wilson ${pct(row.lower)}` : undefined} />
-          <StatTile size="sm" label="Compiled" value={pct(row?.compileRate ?? 0)} sub={row ? `${num(row.compiled)} / ${num(row.decks)}` : undefined} />
+          <StatTile size="sm" label={tr('stats.protocols.detail.decks')} value={num(row?.decks ?? 0)} sub={row ? tr('stats.protocols.detail.shareOfAll', { share: pct(row.share) }) : undefined} />
+          <StatTile
+            size="sm"
+            label={tr('common.game.winRate')}
+            value={pct(row?.rate ?? 0)}
+            tone={(row?.rate ?? 0) >= 0.5 ? 'win' : 'loss'}
+            sub={row ? tr('stats.protocols.detail.wilsonSub', { value: pct(row.lower) }) : undefined}
+          />
+          <StatTile
+            size="sm"
+            label={tr('common.game.compiled')}
+            value={pct(row?.compileRate ?? 0)}
+            sub={row ? tr('stats.protocols.detail.compiledOf', { compiled: row.compiled, decks: row.decks }) : undefined}
+          />
         </div>
       </div>
 
-      <div className={t.sectionLabel}>Matchups — win rate vs decks with…</div>
-      {matchups.length === 0 ? <div className={t.empty}>not enough games (min 2 per matchup)</div> : <BarList items={matchups} format={(v) => pct(v)} />}
+      <div className={t.sectionLabel}>{tr('stats.protocols.detail.matchups')}</div>
+      {matchups.length === 0 ? <div className={t.empty}>{tr('stats.protocols.detail.matchupsEmpty')}</div> : <BarList items={matchups} format={(v) => pct(v)} />}
 
-      <div className={t.sectionLabel}>Counter picks — beats this protocol most often (≥ {minSample} games)</div>
+      <div className={t.sectionLabel}>{tr('stats.protocols.detail.counters', { count: minSample })}</div>
       {counters.length === 0 ? (
-        <div className={t.empty}>no clear counters yet</div>
+        <div className={t.empty}>{tr('stats.protocols.detail.countersEmpty')}</div>
       ) : (
         <ul className={t.list}>
           {counters.map((c) => (
@@ -217,16 +240,16 @@ function ProtocolDetail({ agg, id, minSample, row }: { agg: Agg; id: ProtocolId;
                 <ProtocolChip protocolId={c.id} size="sm" />
               </span>
               <span className={t.listNum}>
-                {pct(c.winRateAgainst)} · {c.games} g
+                {pct(c.winRateAgainst)} · {tr('stats.units.gamesShort', { count: c.games })}
               </span>
             </li>
           ))}
         </ul>
       )}
 
-      <div className={t.sectionLabel}>Best pairs with it (≥ {minSample} decks)</div>
+      <div className={t.sectionLabel}>{tr('stats.protocols.detail.pairs', { count: minSample })}</div>
       {pairs.length === 0 ? (
-        <div className={t.empty}>no pairs above the sample threshold</div>
+        <div className={t.empty}>{tr('stats.protocols.detail.pairsEmpty')}</div>
       ) : (
         <ul className={t.list}>
           {pairs.map((c) => (
@@ -237,7 +260,7 @@ function ProtocolDetail({ agg, id, minSample, row }: { agg: Agg; id: ProtocolId;
                 ))}
               </span>
               <span className={t.listNum}>
-                {pct(c.rate)} · <WilsonValue value={pct(c.lower)} /> · {c.decks} d
+                {pct(c.rate)} · <WilsonValue value={pct(c.lower)} /> · {tr('stats.units.decksShort', { count: c.decks })}
               </span>
             </li>
           ))}

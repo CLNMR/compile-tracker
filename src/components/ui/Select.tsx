@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { useT } from '@/i18n';
 import { cx } from './cx';
 import { IconCheck, IconChevron } from './icons';
 import f from './Field.module.css';
@@ -60,6 +61,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
   { label, hint, error, options, value, onChange, placeholder, disabled, required, selectProps, className },
   ref,
 ) {
+  const { t } = useT();
   const auto = useId();
   const id = selectProps?.id ?? auto;
   const listId = `${id}-list`;
@@ -245,7 +247,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
       {label != null ? (
         <label htmlFor={id} className={f.label} onClick={() => triggerRef.current?.focus()}>
           {label}
-          {required ? ' *' : null}
+          {required ? <span title={t('ui.field.required')}> *</span> : null}
         </label>
       ) : null}
       <div className={cx(f.control, s.control, open && s.open, disabled && s.disabled)}>
@@ -293,6 +295,11 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
               style={{ top: pos.top, left: pos.left, width: pos.width, maxHeight: pos.maxHeight }}
               onKeyDown={onKeyDown}
             >
+              {options.length === 0 ? (
+                <li role="presentation" className={cx(s.option, s.optionDisabled)}>
+                  <span className={s.optionLabel}>{t('ui.select.noOptions')}</span>
+                </li>
+              ) : null}
               {grouped.map((g, gi) => {
                 const items = g.items.map(({ option, index }) => (
                   <li

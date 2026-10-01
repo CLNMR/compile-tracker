@@ -11,7 +11,7 @@ const OUT = process.argv[2] ?? 'e2e/out';
 mkdirSync(OUT, { recursive: true });
 
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
-const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, locale: 'en-US' });
 const page = await ctx.newPage();
 
 const problems = [];

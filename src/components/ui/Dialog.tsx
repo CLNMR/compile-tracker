@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import { useT } from '@/i18n';
 import { cx } from './cx';
 import { Button } from './Button';
 import { IconButton } from './Button';
@@ -20,6 +21,7 @@ export interface DialogProps {
 
 /** Native `<dialog>` modal with chamfered chrome. Esc and backdrop click close it. */
 export function Dialog({ open, onClose, title, children, footer, danger, width = 480, className }: DialogProps) {
+  const { t } = useT();
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
@@ -54,7 +56,7 @@ export function Dialog({ open, onClose, title, children, footer, danger, width =
           <h2 id={titleId} className={s.title}>
             {title}
           </h2>
-          <IconButton label="Close" size="sm" onClick={onClose} className={s.close}>
+          <IconButton label={t('common.actions.close')} size="sm" onClick={onClose} className={s.close}>
             <IconX />
           </IconButton>
         </header>
@@ -85,12 +87,13 @@ export function ConfirmDialog({
   onConfirm,
   title,
   children,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   danger,
   requireText,
   loading,
 }: ConfirmDialogProps) {
+  const { t } = useT();
   const [typed, setTyped] = useState('');
   const [prevOpen, setPrevOpen] = useState(open);
   if (open !== prevOpen) {
@@ -109,10 +112,10 @@ export function ConfirmDialog({
       footer={
         <>
           <Button variant="subtle" onClick={onClose} disabled={loading}>
-            {cancelLabel}
+            {cancelLabel ?? t('common.actions.cancel')}
           </Button>
           <Button variant={danger ? 'danger' : 'primary'} onClick={() => void onConfirm()} disabled={!ok} loading={loading}>
-            {confirmLabel}
+            {confirmLabel ?? t('common.actions.confirm')}
           </Button>
         </>
       }
@@ -123,7 +126,7 @@ export function ConfirmDialog({
           className={s.requireField}
           label={
             <>
-              Type <code className={s.code}>{requireText}</code> to confirm
+              {t('ui.dialog.typeToConfirm.before')} <code className={s.code}>{requireText}</code> {t('ui.dialog.typeToConfirm.after')}
             </>
           }
           value={typed}

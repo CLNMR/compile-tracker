@@ -1,19 +1,23 @@
 import type { ReactNode } from 'react';
+import type { TKey } from '@/i18n';
 import { IconChart, IconHome, IconList, IconPlus, IconSettings, IconUser, type IconProps } from './icons';
 
 export interface NavItem {
   to: string;
-  label: string;
+  /** Message key rendered via `t()`; e.g. `'ui.nav.home'`. */
+  labelKey: TKey;
+  /** Optional literal label for custom items; wins over `labelKey` when given. */
+  label?: string;
   icon: (p: IconProps) => ReactNode;
   /** Exact match only (for `/` and `/games`). */
   end?: boolean;
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { to: '/', label: 'Home', icon: IconHome, end: true },
-  { to: '/games/new', label: 'New game', icon: IconPlus },
-  { to: '/games', label: 'Games', icon: IconList, end: true },
-  { to: '/stats', label: 'Stats', icon: IconChart },
-  { to: '/players', label: 'Players', icon: IconUser },
-  { to: '/settings', label: 'Settings', icon: IconSettings },
+  { to: '/', labelKey: 'ui.nav.home', icon: IconHome, end: true },
+  { to: '/games/new', labelKey: 'ui.nav.newGame', icon: IconPlus },
+  { to: '/games', labelKey: 'ui.nav.games', icon: IconList, end: true },
+  { to: '/stats', labelKey: 'ui.nav.stats', icon: IconChart },
+  { to: '/players', labelKey: 'ui.nav.players', icon: IconUser },
+  { to: '/settings', labelKey: 'ui.nav.settings', icon: IconSettings },
 ];

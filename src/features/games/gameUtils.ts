@@ -1,4 +1,5 @@
 import type { GameDoc, GameSide, SideKey } from '@/types';
+import { INTL_TAG, translate, type Locale } from '@/i18n';
 
 /* ---------- dates ---------- */
 
@@ -6,42 +7,35 @@ const MIN = 60_000;
 const HOUR = 60 * MIN;
 const DAY = 24 * HOUR;
 
-/** Coarse relative label: "just now", "5 min ago", "yesterday", "3 days ago", "in 2 hours"… */
-export function formatRelative(date: Date, now: Date | number = Date.now()): string {
+const rtfCache = new Map<Locale, Intl.RelativeTimeFormat>();
+function relativeFormat(locale: Locale): Intl.RelativeTimeFormat {
+  let f = rtfCache.get(locale);
+  if (!f) {
+    f = new Intl.RelativeTimeFormat(INTL_TAG[locale], { numeric: 'auto' });
+    rtfCache.set(locale, f);
+  }
+  return f;
+}
+
+/**
+ * Coarse relative label in the app language: "just now", "5 minutes ago", "yesterday", "3 weeks ago", "in 2 hours"…
+ * Absolute dates/times come from `useT().dateTime` / `i18n().dateTime`.
+ */
+export function formatRelative(date: Date, locale: Locale, now: Date | number = Date.now()): string {
   const nowMs = typeof now === 'number' ? now : now.getTime();
-  const diff = nowMs - date.getTime();
-  const future = diff < 0;
+  const diff = date.getTime() - nowMs;
+  const sign = diff < 0 ? -1 : 1;
   const abs = Math.abs(diff);
-  const wrap = (s: string) => (future ? `in ${s}` : `${s} ago`);
+  const rtf = relativeFormat(locale);
 
-  if (abs < MIN) return 'just now';
-  if (abs < HOUR) return wrap(`${Math.floor(abs / MIN)} min`);
-  if (abs < DAY) {
-    const h = Math.floor(abs / HOUR);
-    return wrap(`${h} hour${h === 1 ? '' : 's'}`);
-  }
+  if (abs < MIN) return translate(locale, 'games.time.justNow');
+  if (abs < HOUR) return rtf.format(sign * Math.floor(abs / MIN), 'minute');
+  if (abs < DAY) return rtf.format(sign * Math.floor(abs / HOUR), 'hour');
   const days = Math.floor(abs / DAY);
-  if (days === 1) return future ? 'tomorrow' : 'yesterday';
-  if (days < 14) return wrap(`${days} days`);
-  if (days < 60) return wrap(`${Math.floor(days / 7)} weeks`);
-  if (days < 365) {
-    const m = Math.floor(days / 30);
-    return wrap(`${m} month${m === 1 ? '' : 's'}`);
-  }
-  const y = Math.floor(days / 365);
-  return wrap(`${y} year${y === 1 ? '' : 's'}`);
-}
-
-const dateTimeFmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-const dateFmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
-
-/** Absolute, locale-aware "Oct 1, 2026, 9:30 PM". */
-export function formatDateTime(date: Date): string {
-  return dateTimeFmt.format(date);
-}
-
-export function formatDate(date: Date): string {
-  return dateFmt.format(date);
+  if (days < 14) return rtf.format(sign * days, 'day');
+  if (days < 60) return rtf.format(sign * Math.floor(days / 7), 'week');
+  if (days < 365) return rtf.format(sign * Math.floor(days / 30), 'month');
+  return rtf.format(sign * Math.floor(days / 365), 'year');
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');

@@ -21,6 +21,7 @@ import {
 import { useUid } from '@/hooks/useAuth';
 import { usePlayers } from '@/hooks/usePlayers';
 import { useSettings } from '@/hooks/useSettings';
+import { useT } from '@/i18n';
 import { deletePlayer, setPlayerArchived } from '@/repo/players';
 import { playerRecords, recentForm, useStats, type PlayerRecordRow } from '@/stats';
 import { PlayerDialog } from './PlayerDialog';
@@ -29,6 +30,7 @@ import s from './PlayersPage.module.css';
 type DialogState = { kind: 'closed' } | { kind: 'create' } | { kind: 'rename'; player: PlayerDoc } | { kind: 'delete'; player: PlayerDoc };
 
 export default function PlayersPage() {
+  const { t } = useT();
   const uid = useUid();
   const toast = useToast();
   const { players, loading } = usePlayers();
@@ -49,9 +51,9 @@ export default function PlayersPage() {
     try {
       await setPlayerArchived(uid, p.id, archived);
       if (archived && defaultPlayerId === p.id) await setDefaultPlayerId(undefined);
-      toast.push({ title: archived ? 'Player archived' : 'Player restored', description: p.name });
+      toast.push({ title: archived ? t('players.toast.archived') : t('players.toast.restored'), description: p.name });
     } catch (e) {
-      toast.push({ title: 'Could not update player', description: (e as Error).message, tone: 'loss' });
+      toast.push({ title: t('players.toast.updateFailed'), description: (e as Error).message, tone: 'loss' });
     } finally {
       setBusyId(null);
     }
@@ -60,9 +62,9 @@ export default function PlayersPage() {
   const onSetMe = async (p: PlayerDoc) => {
     try {
       await setDefaultPlayerId(defaultPlayerId === p.id ? undefined : p.id);
-      toast.push({ title: defaultPlayerId === p.id ? 'Default player cleared' : `You are ${p.name}`, tone: 'win' });
+      toast.push({ title: defaultPlayerId === p.id ? t('players.toast.defaultCleared') : t('players.toast.youAre', { name: p.name }), tone: 'win' });
     } catch (e) {
-      toast.push({ title: 'Could not save setting', description: (e as Error).message, tone: 'loss' });
+      toast.push({ title: t('players.toast.settingFailed'), description: (e as Error).message, tone: 'loss' });
     }
   };
 
@@ -71,10 +73,10 @@ export default function PlayersPage() {
     try {
       await deletePlayer(uid, p.id);
       if (defaultPlayerId === p.id) await setDefaultPlayerId(undefined);
-      toast.push({ title: 'Player deleted', description: `${p.name} now shows as ${pseudonym(p.id)}` });
+      toast.push({ title: t('players.toast.deleted'), description: t('players.toast.deletedDesc', { name: p.name, pseudonym: pseudonym(p.id) }) });
       close();
     } catch (e) {
-      toast.push({ title: 'Could not delete player', description: (e as Error).message, tone: 'loss' });
+      toast.push({ title: t('players.toast.deleteFailed'), description: (e as Error).message, tone: 'loss' });
     } finally {
       setBusyId(null);
     }
@@ -101,14 +103,14 @@ export default function PlayersPage() {
         as="h1"
         right={
           <Button size="sm" iconLeft={<IconPlus />} onClick={() => setDialog({ kind: 'create' })}>
-            New player
+            {t('players.newPlayer')}
           </Button>
         }
       >
-        Players
+        {t('players.title')}
       </SectionHeader>
 
-      <TerminalLine tone="muted">names stay on this device's account — other users only see pseudonyms like {pseudonym('a3f9x')}.</TerminalLine>
+      <TerminalLine tone="muted">{t('players.privacy', { example: pseudonym('a3f9x') })}</TerminalLine>
 
       {loading ? (
         <div className={s.list} aria-busy="true">
@@ -118,11 +120,11 @@ export default function PlayersPage() {
       ) : players.length === 0 ? (
         <EmptyState
           icon={<IconUser />}
-          title="No players yet"
-          lines={['no players registered.', { text: 'add yourself and your opponents to start recording games.', tone: 'muted' }]}
+          title={t('players.empty.title')}
+          lines={[t('players.empty.line1'), { text: t('players.empty.line2'), tone: 'muted' }]}
           action={
             <Button iconLeft={<IconPlus />} onClick={() => setDialog({ kind: 'create' })}>
-              Create player
+              {t('players.createPlayer')}
             </Button>
           }
         />
@@ -131,14 +133,14 @@ export default function PlayersPage() {
           {active.length > 0 ? (
             <ul className={s.list}>{active.map(row)}</ul>
           ) : (
-            <EmptyState compact lines={['all players are archived.']} />
+            <EmptyState compact lines={[t('players.empty.allArchived')]} />
           )}
 
           {archived.length > 0 ? (
             <section className={s.archived}>
               <button type="button" className={s.archivedToggle} onClick={() => setShowArchived((v) => !v)} aria-expanded={showArchived}>
                 <IconChevron direction={showArchived ? 'up' : 'down'} size={16} />
-                <span>Archived</span>
+                <span>{t('players.archivedSection')}</span>
                 <Badge mono>{archived.length}</Badge>
               </button>
               {showArchived ? <ul className={cx(s.list, s.listArchived)}>{archived.map(row)}</ul> : null}
@@ -153,18 +155,17 @@ export default function PlayersPage() {
         open={dialog.kind === 'delete'}
         onClose={close}
         onConfirm={() => (dialog.kind === 'delete' ? onDelete(dialog.player) : undefined)}
-        title="Delete player?"
-        confirmLabel="Delete"
+        title={t('players.deleteDialog.title')}
+        confirmLabel={t('players.deleteDialog.confirm')}
         danger
         loading={dialog.kind === 'delete' && busyId === dialog.player.id}
       >
         {dialog.kind === 'delete' ? (
           <>
             <p>
-              <strong>{dialog.player.name}</strong> will be removed from your players. Games are kept, but will show this player as the pseudonym{' '}
-              <span className="mono">{pseudonym(dialog.player.id)}</span>.
+              <strong>{dialog.player.name}</strong> {t('players.deleteDialog.body')} <span className="mono">{pseudonym(dialog.player.id)}</span>.
             </p>
-            <p className={s.hint}>Prefer archiving if you just want to hide them from the pickers.</p>
+            <p className={s.hint}>{t('players.deleteDialog.hint')}</p>
           </>
         ) : null}
       </ConfirmDialog>
@@ -185,47 +186,67 @@ interface PlayerRowProps {
 }
 
 function PlayerRow({ player, record, form, isMe, busy, onRename, onArchive, onDelete, onSetMe }: PlayerRowProps) {
+  const { t, number, percent } = useT();
   const games = record?.games ?? 0;
   const wins = record?.wins ?? 0;
   const losses = record?.losses ?? 0;
-  const pct = games > 0 ? Math.round((wins / games) * 100) : null;
+  const pct = games > 0 ? percent(wins / games, 0) : null;
+  const formText = form.map((r) => (r === 'W' ? t('players.row.formWin') : t('players.row.formLoss'))).join(' ');
 
   return (
     <li className={cx(s.row, player.archived && s.rowArchived, isMe && s.rowMe)}>
       <div className={s.identity}>
         <div className={s.nameLine}>
           <span className={s.name}>{player.name}</span>
-          {isMe ? <Badge tone="accent">me</Badge> : null}
-          {player.archived ? <Badge mono>archived</Badge> : null}
+          {isMe ? <Badge tone="accent">{t('players.row.me')}</Badge> : null}
+          {player.archived ? <Badge mono>{t('common.game.archived')}</Badge> : null}
         </div>
-        <span className={s.pseudonym} title="Pseudonym shown to other users">
+        <span className={s.pseudonym} title={t('players.row.pseudonymTitle')}>
           {pseudonym(player.id)}
         </span>
       </div>
 
-      <div className={s.record} aria-label={`${wins} wins, ${losses} losses`}>
+      <div className={s.record} aria-label={t('players.row.recordAria', { wins, losses })}>
         <span className={s.wl}>
-          <span className={s.w}>{wins}</span>
+          <span className={s.w}>{number(wins)}</span>
           <span className={s.dash}>–</span>
-          <span className={s.l}>{losses}</span>
+          <span className={s.l}>{number(losses)}</span>
         </span>
-        <span className={s.pct}>{pct == null ? '—' : `${pct}%`}</span>
-        <span className={s.form} aria-label={form.length ? `recent form ${form.join(' ')}` : 'no games yet'}>
-          {form.length === 0 ? <span className={s.formEmpty}>no games</span> : form.map((r, i) => <span key={i} className={cx(s.sq, r === 'W' ? s.sqW : s.sqL)} />)}
+        <span className={s.pct}>{pct ?? '—'}</span>
+        <span className={s.form} aria-label={form.length ? t('players.row.formAria', { form: formText }) : t('players.row.noGamesAria')}>
+          {form.length === 0 ? (
+            <span className={s.formEmpty}>{t('players.row.noGames')}</span>
+          ) : (
+            form.map((r, i) => <span key={i} className={cx(s.sq, r === 'W' ? s.sqW : s.sqL)} />)
+          )}
         </span>
       </div>
 
       <div className={s.actions}>
         {!player.archived ? (
-          <Button size="sm" variant={isMe ? 'subtle' : 'ghost'} iconLeft={<IconUser />} onClick={onSetMe} aria-pressed={isMe} title={isMe ? 'Clear default player' : 'Use as default player'}>
-            {isMe ? 'Me' : 'Set as me'}
+          <Button
+            size="sm"
+            variant={isMe ? 'subtle' : 'ghost'}
+            iconLeft={<IconUser />}
+            onClick={onSetMe}
+            aria-pressed={isMe}
+            title={isMe ? t('players.row.clearDefault') : t('players.row.useAsDefault')}
+          >
+            {isMe ? t('players.row.meButton') : t('players.row.setAsMe')}
           </Button>
         ) : null}
-        <IconButton label="Rename" size="sm" onClick={onRename} disabled={busy}>
+        <IconButton label={t('common.actions.rename')} size="sm" onClick={onRename} disabled={busy}>
           <IconEdit />
         </IconButton>
-        <Switch size="sm" checked={player.archived} onChange={onArchive} disabled={busy} label={<span className={s.switchLabel}>Archived</span>} className={s.switch} />
-        <IconButton label="Delete" size="sm" variant="danger" onClick={onDelete} disabled={busy}>
+        <Switch
+          size="sm"
+          checked={player.archived}
+          onChange={onArchive}
+          disabled={busy}
+          label={<span className={s.switchLabel}>{t('players.row.archived')}</span>}
+          className={s.switch}
+        />
+        <IconButton label={t('common.actions.delete')} size="sm" variant="danger" onClick={onDelete} disabled={busy}>
           <IconTrash />
         </IconButton>
       </div>

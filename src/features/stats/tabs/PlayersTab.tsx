@@ -3,6 +3,7 @@ import { Badge, BarList, Dialog, Panel, StatTile } from '@/components/ui';
 import { ProtocolChip } from '@/components/protocol';
 import { getProtocol, isKnownProtocol } from '@/data/protocols';
 import { usePlayers } from '@/hooks/usePlayers';
+import { useT, type TFunction } from '@/i18n';
 import { playerRecords, rate, recentForm, streaks, type PlayerRecordRow } from '@/stats';
 import { pseudonym } from '@/types';
 import { DataTable, FormSquares, Td, TableRow, WilsonValue, type DataTableColumn } from '../Bits';
@@ -12,21 +13,22 @@ import t from './tabs.module.css';
 
 const ALL_MIN_GAMES = 5;
 
-const COLUMNS: DataTableColumn[] = [
-  { key: 'player', label: 'Player', width: 'minmax(140px, 1.4fr)' },
-  { key: 'games', label: 'Games', width: '64px', align: 'right' },
-  { key: 'wl', label: 'W–L', width: '72px', align: 'right' },
-  { key: 'rate', label: 'Win %', width: '68px', align: 'right' },
-  { key: 'lower', label: 'Wilson', width: '72px', align: 'right', title: 'Wilson lower bound (95%)' },
-  { key: 'first', label: 'First', width: '64px', align: 'right', title: 'Share of games where this player went first' },
-  { key: 'comp', label: 'Compiled for / against', width: '150px', align: 'right', title: 'Average protocols compiled per game' },
-  { key: 'fav', label: 'Favourite', width: '130px' },
-  { key: 'best', label: 'Best', width: '130px', title: 'Highest win rate with at least 3 decks' },
-  { key: 'form', label: 'Form', width: '140px' },
-  { key: 'streak', label: 'Streak', width: '64px', align: 'right' },
+const columns = (tr: TFunction): DataTableColumn[] => [
+  { key: 'player', label: tr('stats.players.col.player'), width: 'minmax(140px, 1.4fr)' },
+  { key: 'games', label: tr('stats.players.col.games'), width: '64px', align: 'right' },
+  { key: 'wl', label: tr('stats.players.col.wl'), width: '72px', align: 'right' },
+  { key: 'rate', label: tr('stats.players.col.rate'), width: '68px', align: 'right' },
+  { key: 'lower', label: tr('stats.wilson.label'), width: '72px', align: 'right', title: tr('stats.wilson.lowerBound95') },
+  { key: 'first', label: tr('stats.players.col.first'), width: '64px', align: 'right', title: tr('stats.players.col.firstHint') },
+  { key: 'comp', label: tr('stats.players.col.compiled'), width: '150px', align: 'right', title: tr('stats.players.col.compiledHint') },
+  { key: 'fav', label: tr('stats.players.col.favourite'), width: '130px' },
+  { key: 'best', label: tr('stats.players.col.best'), width: '130px', title: tr('stats.players.col.bestHint') },
+  { key: 'form', label: tr('stats.players.col.form'), width: '140px' },
+  { key: 'streak', label: tr('stats.players.col.streak'), width: '64px', align: 'right' },
 ];
 
 export function PlayersTab({ agg, games, scope }: StatsTabProps) {
+  const { t: tr } = useT();
   const { byId } = usePlayers();
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -34,6 +36,7 @@ export function PlayersTab({ agg, games, scope }: StatsTabProps) {
     const all = playerRecords(agg);
     return scope === 'all' ? all.filter((r) => r.games >= ALL_MIN_GAMES) : all;
   }, [agg, scope]);
+  const cols = useMemo(() => columns(tr), [tr]);
 
   const nameOf = (pid: string) => (scope === 'mine' ? (byId.get(pid)?.name ?? pseudonym(pid)) : pseudonym(pid));
 
@@ -42,18 +45,18 @@ export function PlayersTab({ agg, games, scope }: StatsTabProps) {
   return (
     <div className={t.stack}>
       <Panel
-        title="Players"
+        title={tr('stats.players.title')}
         padding="sm"
         headerRight={
-          <Badge mono title={scope === 'all' ? `Players with at least ${ALL_MIN_GAMES} games, ranked by Wilson lower bound` : 'Ranked by Wilson lower bound'}>
-            {rows.length} {scope === 'all' ? `· ≥${ALL_MIN_GAMES} games` : ''}
+          <Badge mono title={scope === 'all' ? tr('stats.players.rankedMinHint', { count: ALL_MIN_GAMES }) : tr('stats.players.rankedHint')}>
+            {num(rows.length)} {scope === 'all' ? tr('stats.players.minBadge', { count: ALL_MIN_GAMES }) : ''}
           </Badge>
         }
       >
         {rows.length === 0 ? (
-          <div className={t.empty}>{scope === 'all' ? `no player has ${ALL_MIN_GAMES}+ games in this selection.` : 'no players in this selection.'}</div>
+          <div className={t.empty}>{scope === 'all' ? tr('stats.players.emptyAll', { count: ALL_MIN_GAMES }) : tr('stats.players.emptyMine')}</div>
         ) : (
-          <DataTable columns={COLUMNS} label="Player records">
+          <DataTable columns={cols} label={tr('stats.players.tableLabel')}>
             {rows.map((r) => (
               <PlayerRow
                 key={r.playerId}
@@ -76,9 +79,10 @@ export function PlayersTab({ agg, games, scope }: StatsTabProps) {
 }
 
 function PlayerRow({ row, name, form, streak, onClick }: { row: PlayerRecordRow; name: string; form: ('W' | 'L')[]; streak: number; onClick?: () => void }) {
+  const { t: tr } = useT();
   const tone = streak > 0 ? 'win' : streak < 0 ? 'loss' : undefined;
   return (
-    <TableRow onClick={onClick} label={onClick ? `${name}: open protocol breakdown` : undefined}>
+    <TableRow onClick={onClick} label={onClick ? tr('stats.players.openBreakdown', { name }) : undefined}>
       <Td title={name}>{name}</Td>
       <Td align="right" mono>
         {num(row.games)}
@@ -113,6 +117,8 @@ function PlayerRow({ row, name, form, streak, onClick }: { row: PlayerRecordRow;
 }
 
 function PlayerDetail({ row, decks }: { row: PlayerRecordRow; decks: Record<string, { decks: number; wins: number }> }) {
+  const { t: tr } = useT();
+  // `tr` is stable per locale, so listing it also refreshes the locale-bound pct() output.
   const items = useMemo(
     () =>
       Object.entries(decks)
@@ -126,20 +132,24 @@ function PlayerDetail({ row, decks }: { row: PlayerRecordRow; decks: Record<stri
             label: <ProtocolChip protocolId={id} size="sm" />,
             value: d.decks,
             color: `linear-gradient(90deg, ${p.colors.secondary}, ${p.colors.primary})`,
-            sub: `${d.wins} W · ${pct(r)} win rate`,
+            sub: tr('stats.players.detail.deckSub', { wins: d.wins, rate: pct(r) }),
           };
         }),
-    [decks],
+    [decks, tr],
   );
   return (
     <div className={t.stack}>
       <div className={t.tiles3}>
-        <StatTile size="sm" label="Games" value={num(row.games)} sub={record(row.wins, row.losses)} />
-        <StatTile size="sm" label="Win rate" value={pct(row.rate)} tone={row.rate >= 0.5 ? 'win' : 'loss'} />
-        <StatTile size="sm" label="Wilson" value={pct(row.lower)} sub="lower bound" />
+        <StatTile size="sm" label={tr('stats.players.detail.games')} value={num(row.games)} sub={record(row.wins, row.losses)} />
+        <StatTile size="sm" label={tr('common.game.winRate')} value={pct(row.rate)} tone={row.rate >= 0.5 ? 'win' : 'loss'} />
+        <StatTile size="sm" label={tr('stats.wilson.label')} value={pct(row.lower)} sub={tr('stats.wilson.lowerBound')} />
       </div>
-      <div className={t.sectionLabel}>Protocols played</div>
-      {items.length === 0 ? <div className={t.empty}>no decks</div> : <BarList items={items} format={(v) => `${num(v)} decks`} />}
+      <div className={t.sectionLabel}>{tr('stats.players.detail.protocolsPlayed')}</div>
+      {items.length === 0 ? (
+        <div className={t.empty}>{tr('stats.players.detail.noDecks')}</div>
+      ) : (
+        <BarList items={items} format={(v) => tr('stats.units.decks', { count: v })} />
+      )}
     </div>
   );
 }

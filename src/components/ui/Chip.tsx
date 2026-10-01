@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { useT } from '@/i18n';
 import { cx } from './cx';
 import { IconX } from './icons';
 import s from './Chip.module.css';
@@ -25,13 +26,15 @@ export function Chip({
   tone = 'default',
   icon,
   onRemove,
-  removeLabel = 'Remove',
+  removeLabel,
   onClick,
   selected,
   size = 'md',
   className,
   title,
 }: ChipProps) {
+  const { t } = useT();
+  const removeText = removeLabel ?? t('ui.chip.remove');
   const cls = cx(s.root, s[tone], s[size], onClick && s.clickable, selected && s.selected, className);
   const inner = (
     <>
@@ -46,14 +49,14 @@ export function Chip({
         <button type="button" className={cls} title={title} {...btnProps}>
           {inner}
         </button>
-        {onRemove ? <RemoveBtn onRemove={onRemove} label={removeLabel} tone={tone} /> : null}
+        {onRemove ? <RemoveBtn onRemove={onRemove} label={removeText} tone={tone} /> : null}
       </span>
     );
   }
   return (
     <span className={cls} title={title}>
       {inner}
-      {onRemove ? <RemoveBtn onRemove={onRemove} label={removeLabel} tone={tone} inline /> : null}
+      {onRemove ? <RemoveBtn onRemove={onRemove} label={removeText} tone={tone} inline /> : null}
     </span>
   );
 }

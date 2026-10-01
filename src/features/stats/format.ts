@@ -1,31 +1,35 @@
-/** 0.6123 → "61%" (or "61.2%" with digits = 1). */
+import { currentLocale, formatDate, formatNumber, formatPercent, formatYearMonth, i18n } from '@/i18n';
+
+/**
+ * Locale-aware formatting for the stats tabs. Every helper reads the locale active *now*,
+ * so memoized call sites must list `locale` (from `useT()`) in their dependencies.
+ */
+
+/** 0.6123 → "61%" / "61 %" (or one decimal with digits = 1). */
 export function pct(x: number, digits = 0): string {
   if (!Number.isFinite(x)) return '–';
-  return `${(x * 100).toFixed(digits)}%`;
+  return formatPercent(x, currentLocale(), digits);
 }
 
 /** Locale-formatted number with fixed decimals. */
 export function num(x: number, digits = 0): string {
   if (!Number.isFinite(x)) return '–';
-  return x.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  return formatNumber(x, currentLocale(), { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
 /** "W" / "L" record string. */
 export function record(wins: number, losses: number): string {
-  return `${wins}–${losses}`;
+  return `${num(wins)}–${num(losses)}`;
 }
 
-/** Short local date, e.g. "3 Sep 2026". */
+/** Short local date, e.g. "Sep 3, 2026" / "3. Sept. 2026". */
 export function shortDate(ms: number): string {
-  return new Date(ms).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  return formatDate(ms, currentLocale(), { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-/** "2026-03" → "Mar 26". */
+/** "2026-03" → "Mar 26" / "März 26". */
 export function monthLabel(yearMonth: string): string {
-  const [y, m] = yearMonth.split('-').map(Number);
-  if (!y || !m) return yearMonth;
-  const d = new Date(y, m - 1, 1);
-  return d.toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
+  return formatYearMonth(yearMonth, currentLocale());
 }
 
 /** Local-date `YYYY-MM-DD` for `<input type="date">`. */
@@ -41,12 +45,10 @@ export function fromDateInput(s: string): Date | undefined {
   return Number.isNaN(d.getTime()) ? undefined : d;
 }
 
-/** Streak as "W4" / "L2" / "–". */
+/** Streak as "W4" / "L2" / "–" (localized result letter). */
 export function streakLabel(current: number): string {
-  if (current > 0) return `W${current}`;
-  if (current < 0) return `L${-current}`;
+  const { t } = i18n();
+  if (current > 0) return `${t('stats.form.win')}${current}`;
+  if (current < 0) return `${t('stats.form.loss')}${-current}`;
   return '–';
 }
-
-export const WILSON_HINT =
-  'Wilson lower bound (95%): a conservative win-rate estimate that penalises small samples, so 1/1 ranks below 8/10.';

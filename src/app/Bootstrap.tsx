@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { useT } from '@/i18n';
 import { useAuthStore } from '@/store/authStore';
 import { useGamesStore } from '@/store/gamesStore';
 import { usePlayersStore } from '@/store/playersStore';
@@ -9,6 +10,7 @@ import { useSettingsStore } from '@/store/settingsStore';
  * Renders `fallback` until auth has resolved (anonymous sign-in included).
  */
 export function Bootstrap({ children, fallback }: { children: ReactNode; fallback: ReactNode }) {
+  const { t } = useT();
   const start = useAuthStore((s) => s.start);
   const uid = useAuthStore((s) => s.uid);
   const loading = useAuthStore((s) => s.loading);
@@ -32,7 +34,7 @@ export function Bootstrap({ children, fallback }: { children: ReactNode; fallbac
     return (
       <>
         {fallback}
-        {error && <p role="alert" style={{ color: 'var(--loss)', padding: 16, fontFamily: 'var(--font-mono)' }}>&gt; auth failed: {error}</p>}
+        {error && <p role="alert" style={{ color: 'var(--loss)', padding: 16, fontFamily: 'var(--font-mono)' }}>&gt; {t('app.authFailed', { error })}</p>}
       </>
     );
   }

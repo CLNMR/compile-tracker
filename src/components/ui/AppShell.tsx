@@ -1,5 +1,6 @@
 import { createElement, type ReactNode } from 'react';
 import { Link, NavLink } from 'react-router';
+import { useT } from '@/i18n';
 import { cx } from './cx';
 import { LogoMark } from './LogoMark';
 import { Wordmark } from './Wordmark';
@@ -17,15 +18,18 @@ export interface AppShellProps {
 
 /** Top bar + bottom tab bar (<768px) or left side rail (≥768px). */
 export function AppShell({ children, topRight, banner, items = NAV_ITEMS }: AppShellProps) {
+  const { t } = useT();
+  const labelOf = (it: NavItem) => it.label ?? t(it.labelKey);
+
   return (
     <div className={s.root}>
       <a href="#main" className={s.skip}>
-        Skip to content
+        {t('ui.shell.skipToContent')}
       </a>
 
       <header className={s.top}>
         <div className={s.topInner}>
-          <Link to="/" className={s.brand} aria-label="Compile Tracker — home">
+          <Link to="/" className={s.brand} aria-label={t('ui.shell.brand')}>
             <LogoMark size={24} />
             <Wordmark size="sm" />
           </Link>
@@ -33,13 +37,13 @@ export function AppShell({ children, topRight, banner, items = NAV_ITEMS }: AppS
         </div>
       </header>
 
-      <nav className={s.rail} aria-label="Primary">
+      <nav className={s.rail} aria-label={t('ui.shell.primaryNav')}>
         <ul className={s.railList}>
           {items.map((it) => (
             <li key={it.to}>
               <NavLink to={it.to} end={it.end} className={({ isActive }) => cx(s.railLink, isActive && s.active)}>
                 <span className={s.navIcon}>{createElement(it.icon, { size: 20 })}</span>
-                <span className={s.navLabel}>{it.label}</span>
+                <span className={s.navLabel}>{labelOf(it)}</span>
               </NavLink>
             </li>
           ))}
@@ -56,16 +60,21 @@ export function AppShell({ children, topRight, banner, items = NAV_ITEMS }: AppS
         </main>
       </div>
 
-      <nav className={s.tabbar} aria-label="Primary">
+      <nav className={s.tabbar} aria-label={t('ui.shell.primaryNav')}>
         <ul className={s.tabList}>
-          {items.map((it) => (
-            <li key={it.to}>
-              <NavLink to={it.to} end={it.end} className={({ isActive }) => cx(s.tabLink, isActive && s.active)}>
-                <span className={s.navIcon}>{createElement(it.icon, { size: 22 })}</span>
-                <span className={s.tabLabel}>{it.label}</span>
-              </NavLink>
-            </li>
-          ))}
+          {items.map((it) => {
+            const label = labelOf(it);
+            return (
+              <li key={it.to}>
+                <NavLink to={it.to} end={it.end} className={({ isActive }) => cx(s.tabLink, isActive && s.active)}>
+                  <span className={s.navIcon}>{createElement(it.icon, { size: 22 })}</span>
+                  <span className={s.tabLabel} data-long={label.length > 8 || undefined}>
+                    {label}
+                  </span>
+                </NavLink>
+              </li>
+            );
+          })}
         </ul>
       </nav>
     </div>
