@@ -1,0 +1,80 @@
+import type { Timestamp } from 'firebase/firestore';
+
+export type SetId = 'MN01' | 'MN02' | 'MN03' | 'AX01' | 'AX02' | 'AX03';
+/** Lowercase slug from `src/data/protocols.ts`, e.g. `'fire'`. */
+export type ProtocolId = string;
+export type SideKey = 'p1' | 'p2';
+export type Scope = 'mine' | 'all';
+
+/** users/{uid} */
+export interface UserDoc {
+  enabledSets: SetId[];
+  defaultPlayerId?: string;
+}
+
+/** users/{uid}/players/{playerId} — the auto-id is the pseudonym used in games. */
+export interface Player {
+  name: string;
+  createdAt: Timestamp;
+  archived: boolean;
+}
+export type PlayerDoc = Player & { id: string };
+
+export interface GameSide {
+  /** Opaque id into the owner's players subcollection. Never a name. */
+  playerId: string;
+  /** Exactly 3 distinct protocol ids, sorted. */
+  protocols: ProtocolId[];
+  /** Subset of `protocols`: 3 for the winner, 0–2 for the loser. */
+  compiled: ProtocolId[];
+}
+
+/** games/{gameId} */
+export interface Game {
+  schemaVersion: 1;
+  ownerUid: string;
+  /** User-chosen date, client-set. Sort and group by this, never by createdAt. */
+  playedAt: Timestamp;
+  /** 'YYYY-MM' derived from playedAt. */
+  yearMonth: string;
+  p1: GameSide;
+  p2: GameSide;
+  winner: SideKey;
+  firstPlayer?: SideKey;
+  /** Union of both sides, 6 sorted ids (for array-contains). */
+  allProtocols: ProtocolId[];
+  isTestData: boolean;
+  /** serverTimestamp(); audit only. */
+  createdAt: Timestamp;
+}
+export type GameDoc = Game & { id: string };
+
+/** What the UI hands to the repo when creating/updating a game. */
+export interface GameInput {
+  playedAt: Date;
+  p1: GameSide;
+  p2: GameSide;
+  winner: SideKey;
+  firstPlayer?: SideKey;
+  isTestData?: boolean;
+}
+
+export const otherSide = (s: SideKey): SideKey => (s === 'p1' ? 'p2' : 'p1');
+
+/** Derive the winner from compiled counts; null if not exactly one side has 3. */
+export function deriveWinner(p1: Pick<GameSide, 'compiled'>, p2: Pick<GameSide, 'compiled'>): SideKey | null {
+  const a = p1.compiled.length === 3;
+  const b = p2.compiled.length === 3;
+  if (a && !b) return 'p1';
+  if (b && !a) return 'p2';
+  return null;
+}
+
+export function yearMonthOf(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** Short pseudonymous label shown in "All" scope. */
+export function pseudonym(playerId: string): string {
+  return `P-${playerId.slice(0, 4).toUpperCase()}`;
+}

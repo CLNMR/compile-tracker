@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    // Anonymous users count as signed in.
+    function signedIn() { return request.auth != null; }
+
+    // Admin uids — keep in sync with VITE_ADMIN_UIDS. Changing this requires `npm run deploy:rules`.
+    function isAdmin() { return signedIn() && request.auth.uid in ['__ADMIN_UID__']; }
+
+    function validSide(s) {
+      return s.keys().hasOnly(['playerId', 'protocols', 'compiled'])
+        && s.playerId is string && s.playerId.size() >= 1 && s.playerId.size() <= 64
+        && s.protocols is list && s.protocols.size() == 3
+        && s.protocols.toSet().size() == 3
+        && s.compiled is list && s.compiled.size() <= 3
+        && s.protocols.toSet().hasAll(s.compiled);
+    }
+
+    function loserKey(d) { return d.winner == 'p1' ? 'p2' : 'p1'; }
+
+    function validGame(d) {
+      return d.keys().hasOnly(['schemaVersion', 'ownerUid', 'playedAt', 'yearMonth', 'p1', 'p2',
+                               'winner', 'firstPlayer', 'allProtocols', 'isTestData', 'createdAt'])
+        && d.schemaVersion == 1
+        && d.ownerUid == request.auth.uid
+        && d.playedAt is timestamp
+        && d.yearMonth is string && d.yearMonth.size() == 7
+        && validSide(d.p1) && validSide(d.p2)
+        && d.winner in ['p1', 'p2']
+        // winner compiled all three of its protocols
+        && d[d.winner].compiled.toSet() == d[d.winner].protocols.toSet()
+        // loser compiled 0–2
+        && d[loserKey(d)].compiled.size() < 3
+        && (!('firstPlayer' in d) || d.firstPlayer in ['p1', 'p2'])
+        && d.allProtocols is list && d.allProtocols.size() == 6
+        && d.allProtocols.toSet() == d.p1.protocols.toSet().union(d.p2.protocols.toSet())
+        && d.isTestData is bool;
+    }
+
+    match /users/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+
+      match /players/{pid} {
+        allow read, delete: if signedIn() && request.auth.uid == uid;
+        allow create, update: if signedIn() && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['name', 'createdAt', 'archived'])
+          && request.resource.data.name is string
+          && request.resource.data.name.size() >= 1
+          && request.resource.data.name.size() <= 40;
+      }
+    }
+
+    match /games/{gid} {
+      allow read: if signedIn();
+      allow create: if signedIn() && validGame(request.resource.data);
+      allow update: if signedIn()
+        && resource.data.ownerUid == request.auth.uid
+        && validGame(request.resource.data);
+      allow delete: if signedIn()
+        && (resource.data.ownerUid == request.auth.uid
+            || resource.data.isTestData == true
+            || isAdmin());
+    }
+
+    // Reserved for the precomputed-stats fallback.
+    match /stats/{doc} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

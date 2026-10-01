@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "default": "compile-tracker-cln",
+    "prod": "compile-tracker-cln"
+  }
+}
