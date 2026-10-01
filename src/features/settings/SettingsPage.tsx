@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Badge, Button, ConfirmDialog, Panel, Select, Switch, TerminalLine, useToast } from '@/components/ui';
 import { SETS } from '@/data/sets';
 import { protocolsInSets } from '@/data/protocols';
@@ -103,11 +103,18 @@ function MePanel() {
 }
 
 function AccountPanel() {
-  const { user, uid, isAnonymous, linkGoogle, signInWithExistingGoogle, signOut } = useAuth();
+  const { user, uid, isAnonymous, linkGoogle, switchToExistingGoogle, switchRequest, clearSwitchRequest, redirectNotice, clearRedirectNotice, signOut } =
+    useAuth();
   const toast = useToast();
   const [linking, setLinking] = useState(false);
-  const [switchCredential, setSwitchCredential] = useState<unknown>(null);
   const [switching, setSwitching] = useState(false);
+
+  // A redirect-based link finished while the page reloaded: report it once.
+  useEffect(() => {
+    if (!redirectNotice) return;
+    clearRedirectNotice();
+    toast.push({ title: redirectNotice.title, description: redirectNotice.description, tone: redirectNotice.tone, durationMs: 8000 });
+  }, [redirectNotice, clearRedirectNotice, toast]);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
@@ -121,11 +128,12 @@ function AccountPanel() {
         toast.push({ title: 'Google account linked', description: 'Your data now follows your Google sign-in.', tone: 'win' });
         return;
       }
-      if (res.reason === 'credential-already-in-use') {
-        setSwitchCredential(res.credential);
+      if (res.reason === 'switch-required') return; // store set switchRequest → dialog below opens
+      if (res.reason === 'redirecting') {
+        toast.push({ title: 'Redirecting to Google…', tone: 'default' });
         return;
       }
-      if (res.reason === 'error') toast.push({ title: 'Could not link account', description: res.message, tone: 'loss' });
+      if (res.reason === 'error') toast.push({ title: 'Could not link account', description: `${res.message} (${res.code})`, tone: 'loss', durationMs: 8000 });
     } finally {
       setLinking(false);
     }
@@ -134,8 +142,7 @@ function AccountPanel() {
   const onSwitch = async () => {
     setSwitching(true);
     try {
-      await signInWithExistingGoogle(switchCredential);
-      setSwitchCredential(null);
+      await switchToExistingGoogle();
       toast.push({ title: 'Switched to your Google account', tone: 'win' });
     } catch (e) {
       toast.push({ title: 'Could not switch account', description: (e as Error).message, tone: 'loss' });
@@ -200,15 +207,17 @@ function AccountPanel() {
       </div>
 
       <ConfirmDialog
-        open={switchCredential != null}
-        onClose={() => (switching ? undefined : setSwitchCredential(null))}
+        open={switchRequest != null}
+        onClose={() => (switching ? undefined : clearSwitchRequest())}
         onConfirm={onSwitch}
         title="Google account already in use"
         confirmLabel="Switch to that account"
         loading={switching}
       >
-        This Google account already has Compile Tracker data. You can switch to it now — the games and players recorded under your current
-        anonymous identity stay behind on this device's old identity and will not be merged.
+        {switchRequest?.email ? <code>{switchRequest.email}</code> : 'This Google account'} already has Compile Tracker data under another identity. You
+        can switch to it now — the games and players recorded under your current anonymous identity stay behind on this device's old identity and
+        will not be merged.
+        {switchRequest && !switchRequest.credential ? ' Google will ask you to confirm the account once more.' : ''}
       </ConfirmDialog>
 
       <ConfirmDialog
