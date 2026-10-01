@@ -1,0 +1,154 @@
+.root,
+.badge {
+  --c-fg: var(--text);
+  --c-bg: var(--bg-elev-2);
+  --c-line: var(--line-dim);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  color: var(--c-fg);
+  background: var(--c-bg);
+  border: 1px solid var(--c-line);
+  white-space: nowrap;
+}
+
+.root {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+}
+
+.sm {
+  height: 22px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+
+.wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+}
+
+.clickable {
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+
+.clickable:hover {
+  border-color: var(--line);
+}
+
+.clickable:focus-visible,
+.remove:focus-visible {
+  outline-offset: -2px;
+  box-shadow: none;
+}
+
+.selected {
+  --c-bg: var(--accent-soft);
+  --c-line: var(--line);
+  --c-fg: #fff;
+}
+
+.label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.icon {
+  display: inline-flex;
+  flex: none;
+}
+
+.icon > svg {
+  width: 14px;
+  height: 14px;
+}
+
+.remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  color: var(--text-muted);
+  border: 1px solid var(--line-dim);
+  background: var(--bg-elev-2);
+  clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px));
+}
+
+.remove:hover {
+  color: var(--loss);
+  border-color: var(--loss);
+}
+
+.removeInline {
+  width: 18px;
+  height: 18px;
+  margin-right: -6px;
+  border: 0;
+  background: transparent;
+  clip-path: none;
+}
+
+/* ---- tones ---- */
+.accent {
+  --c-bg: var(--accent-soft);
+  --c-line: var(--line);
+  --c-fg: var(--accent-strong);
+}
+
+.win {
+  --c-bg: var(--win-soft);
+  --c-line: rgba(125, 240, 194, 0.5);
+  --c-fg: var(--win);
+}
+
+.loss {
+  --c-bg: var(--loss-soft);
+  --c-line: rgba(255, 107, 138, 0.5);
+  --c-fg: var(--loss);
+}
+
+.warn {
+  --c-bg: rgba(255, 209, 102, 0.14);
+  --c-line: rgba(255, 209, 102, 0.5);
+  --c-fg: var(--warn);
+}
+
+/* ---- badge ---- */
+.badge {
+  height: 20px;
+  padding: 0 7px;
+  font-family: var(--font-display);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px));
+}
+
+.badge.mono {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  font-size: 11px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}

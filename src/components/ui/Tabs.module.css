@@ -1,0 +1,86 @@
+.root {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--line-dim);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.root::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.grow .tab {
+  flex: 1 1 0;
+  justify-content: center;
+}
+
+.tab:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.tab:disabled {
+  opacity: 0.4;
+}
+
+.tab::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: -1px;
+  height: 2px;
+  background: var(--accent-strong);
+  box-shadow: var(--accent-glow);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--dur) var(--ease);
+}
+
+.active {
+  color: #fff;
+}
+
+.active::after {
+  transform: scaleX(1);
+}
+
+.tab:focus-visible {
+  outline-offset: -3px;
+  box-shadow: none;
+}
+
+.badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 1px 5px;
+  background: var(--bg-elev-3);
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+
+.active .badge {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}

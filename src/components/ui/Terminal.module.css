@@ -1,0 +1,59 @@
+.line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6em;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text);
+  min-width: 0;
+}
+
+.prompt {
+  flex: none;
+  color: var(--accent);
+  user-select: none;
+}
+
+.text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1em;
+  margin-left: 0.25em;
+  vertical-align: -0.15em;
+  background: var(--accent-strong);
+  box-shadow: 0 0 8px var(--accent);
+  animation: blink 1s steps(2, start) infinite;
+}
+
+@keyframes blink {
+  to { visibility: hidden; }
+}
+
+.muted { color: var(--text-muted); }
+.muted .prompt { color: var(--text-dim); }
+.win { color: var(--win); }
+.win .prompt { color: var(--win); }
+.loss { color: var(--loss); }
+.loss .prompt { color: var(--loss); }
+.warn { color: var(--warn); }
+.warn .prompt { color: var(--warn); }
+
+.block {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg);
+  border: 1px solid var(--line-dim);
+  border-left: 2px solid var(--line);
+  min-width: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cursor { animation: none; }
+}

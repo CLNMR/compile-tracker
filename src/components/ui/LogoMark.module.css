@@ -1,0 +1,6 @@
+.root {
+  display: inline-block;
+  flex: none;
+  color: var(--accent);
+  filter: drop-shadow(0 0 6px rgba(201, 85, 238, 0.45));
+}

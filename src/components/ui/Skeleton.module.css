@@ -1,0 +1,21 @@
+.block {
+  display: block;
+  background: linear-gradient(90deg, var(--bg-elev-2) 0%, var(--bg-elev-3) 40%, var(--bg-elev-2) 80%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+  max-width: 100%;
+}
+
+.stack {
+  display: grid;
+  gap: var(--space-2);
+}
+
+@keyframes shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .block { animation: none; }
+}

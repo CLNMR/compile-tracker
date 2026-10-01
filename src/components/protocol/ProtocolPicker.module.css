@@ -1,0 +1,98 @@
+.root {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.counter {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  padding: 3px 8px;
+  border: 1px solid var(--line-dim);
+  background: var(--bg);
+  font-variant-numeric: tabular-nums;
+  display: inline-block;
+}
+
+.counterFull {
+  color: var(--win);
+  border-color: rgba(125, 240, 194, 0.5);
+}
+
+.live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+}
+
+.groups {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.group {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.groupCount {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.grid {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  justify-content: start;
+}
+
+.grid-sm {
+  grid-template-columns: repeat(auto-fill, 56px);
+}
+
+.grid-md {
+  grid-template-columns: repeat(auto-fill, 120px);
+  gap: 12px;
+}
+
+.grid-lg {
+  grid-template-columns: repeat(auto-fill, 180px);
+  gap: 14px;
+}
+
+.cardBlocked {
+  opacity: 0.6;
+}
+
+.shake {
+  animation: shake 0.45s var(--ease);
+  color: var(--loss) !important;
+  border-color: var(--loss) !important;
+}
+
+.shakeSoft {
+  animation: shakeSoft 0.45s var(--ease);
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+@keyframes shakeSoft {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}

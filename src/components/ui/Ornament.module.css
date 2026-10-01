@@ -1,0 +1,69 @@
+.binary {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--text-dim);
+  opacity: 0.8;
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: clip;
+  line-height: 1;
+}
+
+.hatch {
+  display: block;
+  width: 100%;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--hatch-c) 0 3px,
+    transparent 3px 8px
+  );
+  opacity: 0.8;
+}
+
+.hatch-accent { --hatch-c: var(--line); }
+.hatch-dim { --hatch-c: var(--line-dim); }
+.hatch-win { --hatch-c: var(--win); }
+.hatch-loss { --hatch-c: var(--loss); }
+
+.trace {
+  display: block;
+  position: relative;
+  background: var(--line-dim);
+  flex: none;
+}
+
+.traceH {
+  width: 100%;
+  height: 1px;
+}
+
+.traceV {
+  width: 1px;
+  height: 100%;
+  min-height: 24px;
+}
+
+.trace::before,
+.trace::after {
+  content: '';
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  display: none;
+}
+
+.traceH::before { left: -3px; top: -3px; }
+.traceH::after { right: -3px; top: -3px; }
+.traceV::before { top: -3px; left: -3px; }
+.traceV::after { bottom: -3px; left: -3px; }
+
+.nodes-end::after { display: block; }
+.nodes-both::before,
+.nodes-both::after { display: block; }

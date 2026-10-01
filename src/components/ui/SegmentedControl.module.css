@@ -1,0 +1,65 @@
+.root {
+  display: inline-flex;
+  align-items: stretch;
+  padding: 3px;
+  gap: 2px;
+  background: var(--bg);
+  border: 1px solid var(--line-dim);
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+  max-width: 100%;
+}
+
+.full {
+  display: flex;
+  width: 100%;
+}
+
+.full .option {
+  flex: 1 1 0;
+}
+
+.option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 14px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+  white-space: nowrap;
+}
+
+.option:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.option:disabled {
+  opacity: 0.4;
+}
+
+.active {
+  background: var(--accent-soft);
+  color: #fff;
+  border-color: var(--line);
+  box-shadow: inset 0 0 12px rgba(201, 85, 238, 0.25);
+}
+
+.sm .option {
+  min-height: 26px;
+  padding: 0 10px;
+  font-size: 10px;
+}
+
+.option:focus-visible {
+  outline-offset: -2px;
+  box-shadow: none;
+}

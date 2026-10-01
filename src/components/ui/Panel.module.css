@@ -1,0 +1,97 @@
+.root {
+  --panel-bg: var(--bg-elev);
+  --panel-line: var(--line-dim);
+  position: relative;
+  background: var(--panel-line);
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--chamfer)) 0,
+    100% var(--chamfer),
+    100% 100%,
+    var(--chamfer) 100%,
+    0 calc(100% - var(--chamfer))
+  );
+  min-width: 0;
+  animation: panelIn var(--dur-slow) var(--ease) both;
+}
+
+/* inner fill, inset by the 1px border */
+.root::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  background: var(--panel-bg);
+  clip-path: polygon(
+    0 0,
+    calc(100% - (var(--chamfer) - 0.6px)) 0,
+    100% calc(var(--chamfer) - 0.6px),
+    100% 100%,
+    calc(var(--chamfer) - 0.6px) 100%,
+    0 calc(100% - (var(--chamfer) - 0.6px))
+  );
+}
+
+/* faint corner traces, like circuit board silk */
+.root::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, var(--line) 0 1px, transparent 1px) 10px 10px / 14px 1px no-repeat,
+    linear-gradient(var(--line) 0 1px, transparent 1px) 10px 10px / 1px 14px no-repeat;
+  opacity: 0.6;
+}
+
+.body {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.pad-none .body {
+  padding: 0;
+}
+
+.pad-sm .body {
+  padding: var(--space-3);
+}
+
+.pad-md .body {
+  padding: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .pad-md .body {
+    padding: var(--space-5);
+  }
+}
+
+.header {
+  margin-bottom: var(--space-4);
+}
+
+.pad-none .header {
+  margin: var(--space-3) var(--space-3) 0;
+}
+
+.elevated {
+  --panel-bg: var(--bg-elev-2);
+}
+
+.accent {
+  --panel-line: var(--line);
+  --panel-bg: linear-gradient(180deg, var(--bg-elev-2), var(--bg-elev));
+  box-shadow: var(--accent-glow);
+}
+
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

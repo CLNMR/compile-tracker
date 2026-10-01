@@ -1,0 +1,28 @@
+.wrap {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--nav-h) + var(--safe-bottom) + 12px);
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-elev-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--accent-glow);
+  max-width: calc(100vw - 32px);
+}
+
+@media (min-width: 768px) {
+  .wrap {
+    bottom: 24px;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}

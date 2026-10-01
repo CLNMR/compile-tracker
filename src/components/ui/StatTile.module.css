@@ -1,0 +1,59 @@
+.root {
+  --st-fg: var(--text);
+  position: relative;
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px 12px 16px;
+  background: var(--bg);
+  border: 1px solid var(--line-dim);
+  min-width: 0;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+}
+
+.root::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--st-fg);
+  opacity: 0.8;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.value {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 1.1;
+  color: var(--st-fg);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.sm .value { font-size: 20px; }
+.sm { padding: 10px 12px 10px 14px; }
+.lg .value { font-size: 36px; }
+
+.accent { --st-fg: var(--accent-strong); }
+.win { --st-fg: var(--win); }
+.loss { --st-fg: var(--loss); }
+.warn { --st-fg: var(--warn); }

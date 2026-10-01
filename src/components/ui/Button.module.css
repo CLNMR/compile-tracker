@@ -1,0 +1,152 @@
+.root {
+  --btn-h: 40px;
+  --btn-px: 16px;
+  --btn-fs: 13px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: var(--btn-h);
+  padding: 0 var(--btn-px);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--btn-fs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  text-decoration: none;
+  color: var(--text);
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease);
+  user-select: none;
+}
+
+.root:hover {
+  text-decoration: none;
+}
+
+.root:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.root:disabled {
+  opacity: 0.45;
+}
+
+/* clip-path clips outer outlines, so draw the ring inset */
+.root:focus-visible {
+  outline-offset: -3px;
+  box-shadow: none;
+}
+
+.primary:focus-visible {
+  outline-color: #fff;
+}
+
+.sm {
+  --btn-h: 32px;
+  --btn-px: 12px;
+  --btn-fs: 11px;
+}
+
+.lg {
+  --btn-h: 48px;
+  --btn-px: 22px;
+  --btn-fs: 14px;
+}
+
+.full {
+  width: 100%;
+}
+
+.label {
+  display: inline-block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.icon,
+.spinner {
+  display: inline-flex;
+  flex: none;
+}
+
+.icon > svg {
+  width: 1.25em;
+  height: 1.25em;
+}
+
+.loading .label {
+  opacity: 0.7;
+}
+
+/* ---- variants ---- */
+.primary {
+  background: linear-gradient(180deg, var(--accent-strong), var(--accent) 60%, #a93fd0);
+  color: #120a18;
+  border-color: var(--accent-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #f0a0ff, var(--accent-strong) 60%, var(--accent));
+}
+
+.ghost {
+  background: transparent;
+  color: var(--accent-strong);
+  border-color: var(--line);
+}
+
+.ghost:hover:not(:disabled) {
+  background: var(--accent-soft);
+  color: #fff;
+}
+
+.subtle {
+  background: var(--bg-elev-2);
+  color: var(--text);
+  border-color: var(--line-dim);
+}
+
+.subtle:hover:not(:disabled) {
+  background: var(--bg-elev-3);
+  border-color: var(--line);
+}
+
+.danger {
+  background: transparent;
+  color: var(--loss);
+  border-color: rgba(255, 107, 138, 0.55);
+}
+
+.danger:hover:not(:disabled) {
+  background: var(--loss-soft);
+  border-color: var(--loss);
+}
+
+/* ---- icon-only ---- */
+.iconOnly {
+  width: var(--btn-h);
+  padding: 0;
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+}
+
+.iconOnly > svg {
+  width: 20px;
+  height: 20px;
+}
+
+.iconOnly.sm > svg {
+  width: 16px;
+  height: 16px;
+}

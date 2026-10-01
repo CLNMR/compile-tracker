@@ -1,0 +1,138 @@
+/* Shared field chrome for TextField / Select. */
+.root {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.label::before {
+  content: '> ';
+  color: var(--accent);
+}
+
+.control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  background: var(--bg);
+  border: 1px solid var(--line-dim);
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+
+.control:hover {
+  border-color: var(--line);
+}
+
+.control:focus-within {
+  border-color: var(--accent-strong);
+  box-shadow: inset 0 0 0 1px var(--accent-strong);
+}
+
+.invalid .control {
+  border-color: var(--loss);
+}
+
+.input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  font-size: 15px;
+}
+
+.input::placeholder {
+  color: var(--text-dim);
+}
+
+.input:focus,
+.input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.input:disabled {
+  opacity: 0.5;
+}
+
+.input[type='date'],
+.input[type='time'],
+.input[type='datetime-local'] {
+  font-family: var(--font-mono);
+}
+
+.input::-webkit-calendar-picker-indicator {
+  filter: invert(0.8) sepia(1) hue-rotate(240deg) saturate(3);
+  cursor: pointer;
+}
+
+.adorn {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  color: var(--text-dim);
+  padding: 0 10px;
+}
+
+.adorn + .input {
+  padding-left: 0;
+}
+
+.adorn > svg {
+  width: 18px;
+  height: 18px;
+}
+
+.select {
+  appearance: none;
+  padding-right: 36px;
+  cursor: pointer;
+}
+
+.chevron {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--accent);
+}
+
+.select option {
+  background: var(--bg-elev);
+  color: var(--text);
+}
+
+.hint,
+.error {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.hint {
+  color: var(--text-dim);
+}
+
+.error {
+  color: var(--loss);
+}
+
+.error::before {
+  content: '! ';
+}

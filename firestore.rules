@@ -34,6 +34,8 @@ service cloud.firestore {
         && d[loserKey(d)].compiled.size() < 3
         && (!('firstPlayer' in d) || d.firstPlayer in ['p1', 'p2'])
         && d.allProtocols is list && d.allProtocols.size() == 6
+        // 6 distinct protocols across both sides
+        && d.allProtocols.toSet().size() == 6
         && d.allProtocols.toSet() == d.p1.protocols.toSet().union(d.p2.protocols.toSet())
         && d.isTestData is bool;
     }
