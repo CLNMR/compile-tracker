@@ -39,7 +39,7 @@ beforeAll(async () => {
   env = await initializeTestEnvironment({
     projectId: PROJECT_ID,
     firestore: {
-      rules: readFileSync('firestore.rules', 'utf8').replace('__ADMIN_UID__', ADMIN),
+      rules: readFileSync('firestore.rules', 'utf8').replace('XDJYv1xN3oWK7uRSJj4G3sctADJ3', ADMIN),
       host: emuHost,
       port: Number(emuPort),
     },

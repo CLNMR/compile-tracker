@@ -259,7 +259,7 @@ function FormSection() {
             { value: 'MN03', label: 'Main 3' },
             { value: 'AX01', label: 'Aux 1', disabled: true },
           ]}
-          hint="Native select, styled."
+          hint="Custom listbox, themed."
         />
         <Select label="Placeholder" value={player} onChange={setPlayer} placeholder="Choose a player…" options={[{ value: 'a', label: 'Ada' }]} />
         <div className={s.stack}>

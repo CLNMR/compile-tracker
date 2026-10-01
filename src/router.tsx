@@ -3,6 +3,7 @@ import { createBrowserRouter, Outlet } from 'react-router';
 import { AppShell, Spinner } from '@/components/ui';
 import { RouteError } from '@/app/RouteError';
 import { EmulatorBanner } from '@/features/dev/EmulatorBanner';
+import { RequireAdmin } from '@/app/RequireAdmin';
 
 const HomePage = lazy(() => import('@/features/home/HomePage'));
 const PlayersPage = lazy(() => import('@/features/players/PlayersPage'));
@@ -38,8 +39,8 @@ export const router = createBrowserRouter([
       { path: 'games/:id/edit', element: page(<NewGamePage />) },
       { path: 'stats', element: page(<StatsPage />) },
       { path: 'settings', element: page(<SettingsPage />) },
-      { path: 'dev', element: page(<DevToolsPage />) },
-      { path: 'dev/ui', element: page(<UiKitchenSink />) },
+      { path: 'dev', element: <RequireAdmin>{page(<DevToolsPage />)}</RequireAdmin> },
+      { path: 'dev/ui', element: <RequireAdmin>{page(<UiKitchenSink />)}</RequireAdmin> },
     ],
   },
 ]);

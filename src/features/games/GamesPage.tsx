@@ -30,10 +30,14 @@ const isScope = (v: string | null): v is Scope => v === 'mine' || v === 'all';
 const isSetId = (v: string): v is SetId => (ALL_SET_IDS as string[]).includes(v);
 
 /** Protocols grouped by set, for the `<optgroup>` select. */
-const PROTOCOL_GROUPS = SETS.map((set) => ({
-  set,
-  items: PROTOCOLS.filter((p) => p.set === set.id).sort((a, b) => a.name.localeCompare(b.name)),
-}));
+const PROTOCOL_OPTIONS = [
+  { value: '', label: 'All protocols' },
+  ...SETS.flatMap((set) =>
+    PROTOCOLS.filter((p) => p.set === set.id)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((p) => ({ value: p.id, label: p.name, group: set.short })),
+  ),
+];
 
 export default function GamesPage() {
   const uid = useUid();
@@ -118,17 +122,7 @@ export default function GamesPage() {
 
       <div className={s.filters}>
         {scope === 'mine' ? <Select label="Player" value={playerId} onChange={setPlayerId} options={playerOptions} /> : null}
-        <Select label="Protocol" value={protocolId} onChange={setProtocolId} options={[{ value: '', label: 'All protocols' }]}>
-          {PROTOCOL_GROUPS.map(({ set, items }) => (
-            <optgroup key={set.id} label={set.short}>
-              {items.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </Select>
+        <Select label="Protocol" value={protocolId} onChange={setProtocolId} options={PROTOCOL_OPTIONS} />
         <Select
           label="Set"
           value={setId}

@@ -197,10 +197,6 @@ function AccountPanel() {
             Copy
           </Button>
         </div>
-        <p className={s.hint}>
-          Admins: paste this uid into <code>VITE_ADMIN_UIDS</code> and <code>isAdmin()</code> in <code>firestore.rules</code> to unlock the admin
-          panel in Developer tools.
-        </p>
       </div>
 
       <ConfirmDialog
@@ -274,7 +270,7 @@ function InstallPanel() {
 }
 
 function DataPanel() {
-  const { uid } = useAuth();
+  const { uid, isAdmin } = useAuth();
   const { games } = useGames('all');
   const { players } = usePlayers();
   const mine = useMemo(() => games.filter((g) => g.ownerUid === uid).length, [games, uid]);
@@ -287,14 +283,16 @@ function DataPanel() {
           <Count label="my players" value={players.length} />
           <Count label="games in db" value={games.length} />
         </div>
-        <div className={s.row}>
-          <Button variant="ghost" to="/dev">
-            Developer tools
-          </Button>
-          <Button variant="subtle" to="/dev/ui">
-            UI kitchen sink
-          </Button>
-        </div>
+        {isAdmin ? (
+          <div className={s.row}>
+            <Button variant="ghost" to="/dev">
+              Developer tools
+            </Button>
+            <Button variant="subtle" to="/dev/ui">
+              UI kitchen sink
+            </Button>
+          </div>
+        ) : null}
       </div>
     </Panel>
   );

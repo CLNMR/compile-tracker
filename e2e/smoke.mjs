@@ -47,9 +47,17 @@ try {
 
   step('wizard: new game');
   await page.goto(`${BASE}/games/new`, { waitUntil: 'domcontentloaded' });
-  const selects = page.locator('select');
-  await selects.nth(0).selectOption({ label: 'Colin' });
-  await selects.nth(1).selectOption({ label: 'Anna' });
+  const pickSelect = async (index, text) => {
+    const trigger = page.getByRole('combobox').nth(index);
+    await trigger.click();
+    const list = page.getByRole('listbox');
+    await list.waitFor({ timeout: 5_000 });
+    if (index === 0) await shot('03a-select-open');
+    await list.getByRole('option', { name: text, exact: true }).click();
+    await list.waitFor({ state: 'hidden', timeout: 5_000 });
+  };
+  await pickSelect(0, 'Colin');
+  await pickSelect(1, 'Anna');
   await shot('03-wizard-players');
   await page.getByRole('button', { name: /next|continue|protocols/i }).first().click();
   // pick 3 protocols per side by clicking cards in each picker
@@ -93,18 +101,25 @@ try {
   }
   void pickers;
 
-  step('dev tools: generate test data');
+  step('dev tools gate (non-admin → /settings)');
   await page.goto(`${BASE}/dev`, { waitUntil: 'domcontentloaded' });
-  const gamesInput = page.getByLabel(/games/i).first();
-  await gamesInput.fill('120');
-  await page.getByRole('button', { name: /^generate/i }).first().click();
-  await page.getByText(/wrote 120|done|generated/i).first().waitFor({ timeout: 60_000 }).catch(() => problems.push('dev: generation did not report completion'));
-  await shot('07-devtools');
+  await page.waitForURL(/\/settings$/, { timeout: 15_000 }).catch(() => problems.push('gate: /dev did not redirect non-admin to /settings'));
+  await page.goto(`${BASE}/dev/ui`, { waitUntil: 'domcontentloaded' });
+  await page.waitForURL(/\/settings$/, { timeout: 15_000 }).catch(() => problems.push('gate: /dev/ui did not redirect non-admin to /settings'));
+  if (await page.getByRole('link', { name: /developer tools|kitchen sink/i }).count()) problems.push('settings: dev links visible to non-admin');
+  if (await page.getByText(/VITE_ADMIN_UIDS/).count()) problems.push('settings: admin hint visible');
 
   step('games list');
   await page.goto(`${BASE}/games`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(800);
   await shot('08-games');
+  const protoFilter = page.getByRole('combobox', { name: /protocol/i }).first();
+  if (await protoFilter.count()) {
+    await protoFilter.click();
+    await page.getByRole('listbox').waitFor({ timeout: 5_000 });
+    await page.screenshot({ path: `${OUT}/08a-games-protocol-select.png` });
+    await page.keyboard.press('Escape');
+  }
 
   step('stats tabs');
   await page.goto(`${BASE}/stats`, { waitUntil: 'domcontentloaded' });
