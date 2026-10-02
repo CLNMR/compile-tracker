@@ -203,10 +203,9 @@
 
 .hexGlyph {
   position: relative;
-  font-size: calc(var(--hex) * 0.5);
-  line-height: 1;
+  width: calc(var(--hex) * 0.54);
+  height: calc(var(--hex) * 0.54);
   color: #fff;
-  font-family: var(--font-body);
 }
 
 /* ---- value box ---- */
@@ -239,6 +238,31 @@
 .sm .value {
   top: 58%;
   min-width: 55%;
+}
+
+/* Glyph instead of a value: a square box with the icon optically centred. */
+.glyphBox {
+  min-width: 0;
+  width: calc(var(--val-fs) * 1.9);
+  height: calc(var(--val-fs) * 1.9);
+  padding: 0;
+}
+
+.glyphBox > svg {
+  width: calc(var(--val-fs) * 1.15);
+  height: calc(var(--val-fs) * 1.15);
+  filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 10px color-mix(in srgb, var(--p) 45%, transparent));
+}
+
+.sm .glyphBox {
+  min-width: 0;
+  width: calc(var(--val-fs) * 1.6);
+  height: calc(var(--val-fs) * 1.6);
+}
+
+.sm .glyphBox > svg {
+  width: var(--val-fs);
+  height: var(--val-fs);
 }
 
 /* ---- footer labels ---- */

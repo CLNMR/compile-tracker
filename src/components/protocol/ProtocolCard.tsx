@@ -4,6 +4,7 @@ import { SET_BY_ID } from '@/data/sets';
 import { useT } from '@/i18n';
 import { cx } from '@/components/ui/cx';
 import { IconCheck } from '@/components/ui/icons';
+import { ProtocolGlyph } from './ProtocolGlyph';
 import s from './ProtocolCard.module.css';
 
 export type ProtocolCardSize = 'sm' | 'md' | 'lg';
@@ -79,12 +80,16 @@ export function ProtocolCard({
           </div>
           {size !== 'sm' ? (
             <div className={s.hex} aria-hidden="true">
-              <span className={s.hexGlyph}>{p.glyph}</span>
+              <ProtocolGlyph protocolId={p.id} className={s.hexGlyph} />
             </div>
           ) : null}
-          <div className={s.value} aria-hidden={value == null ? true : undefined}>
-            {value ?? p.glyph}
-          </div>
+          {value == null ? (
+            <div className={cx(s.value, s.glyphBox)} aria-hidden="true">
+              <ProtocolGlyph protocolId={p.id} />
+            </div>
+          ) : (
+            <div className={s.value}>{value}</div>
+          )}
           {state === 'loading' ? <div className={s.status}>{t('common.game.loading')}</div> : null}
           {showSet && size !== 'sm' ? <div className={s.set}>{setShort(set)}</div> : null}
         </div>
