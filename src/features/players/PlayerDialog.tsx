@@ -4,6 +4,7 @@ import { Button, Dialog, TextField, useToast } from '@/components/ui';
 import { useUid } from '@/hooks/useAuth';
 import { usePlayers } from '@/hooks/usePlayers';
 import { useT } from '@/i18n';
+import { recordPlayerCreated } from '@/analytics';
 import { createPlayer, normalizePlayerName, renamePlayer } from '@/repo/players';
 
 export interface PlayerDialogProps {
@@ -65,6 +66,7 @@ export function PlayerDialog({ open, onClose, player, onSaved }: PlayerDialogPro
         toast.push({ title: t('players.toast.renamed'), description: `${player.name} → ${clean}` });
       } else {
         id = await createPlayer(uid, clean);
+        recordPlayerCreated();
         toast.push({ title: t('players.toast.created'), description: clean, tone: 'win' });
       }
       onSaved?.(id);

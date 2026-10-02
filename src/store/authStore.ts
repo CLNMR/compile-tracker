@@ -14,6 +14,7 @@ import {
 } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
 import { ADMIN_UIDS, auth } from '@/firebase/app';
+import { recordGoogleLinked, recordNewUser } from '@/analytics';
 import { t } from '@/i18n';
 
 /** Raised when the Google account is already bound to another Compile Tracker identity. */
@@ -52,6 +53,8 @@ interface AuthState {
 }
 
 let started = false;
+/** The next anonymous identity replaces one we signed out of — not a new visitor. */
+let signingOut = false;
 
 const provider = () => {
   const p = new GoogleAuthProvider();
@@ -94,6 +97,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     getRedirectResult(auth)
       .then((res) => {
         if (res?.user) {
+          recordGoogleLinked();
           set({ redirectNotice: { tone: 'win', title: t('auth.linked.title'), description: t('auth.linked.description') } });
         }
       })
@@ -111,6 +115,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (!user) {
         try {
           await signInAnonymously(auth);
+          if (!signingOut) recordNewUser();
+          signingOut = false;
           return; // next callback carries the user
         } catch (e) {
           const d = describe(e);
@@ -142,6 +148,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // context with separate storage, so the link never completes in the app. Redirect only when popups fail.
     try {
       const res = await linkWithPopup(user, provider());
+      recordGoogleLinked();
       set({ user: res.user, isAnonymous: res.user.isAnonymous });
       return { ok: true };
     } catch (e) {
@@ -194,6 +201,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   clearRedirectNotice: () => set({ redirectNotice: null }),
 
   signOut: async () => {
+    signingOut = true;
     await fbSignOut(auth); // onAuthStateChanged → new anonymous user
   },
 }));

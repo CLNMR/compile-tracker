@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { recordSession } from '@/analytics';
 import { useT } from '@/i18n';
 import { useAuthStore } from '@/store/authStore';
 import { useGamesStore } from '@/store/gamesStore';
@@ -15,8 +16,14 @@ export function Bootstrap({ children, fallback }: { children: ReactNode; fallbac
   const uid = useAuthStore((s) => s.uid);
   const loading = useAuthStore((s) => s.loading);
   const error = useAuthStore((s) => s.error);
+  const isAnonymous = useAuthStore((s) => s.isAnonymous);
+  const isAdmin = useAuthStore((s) => s.isAdmin);
 
   useEffect(() => start(), [start]);
+
+  useEffect(() => {
+    if (uid) recordSession({ isAnonymous, isAdmin });
+  }, [uid, isAnonymous, isAdmin]);
 
   useEffect(() => {
     if (!uid) return;

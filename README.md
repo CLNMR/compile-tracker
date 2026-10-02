@@ -53,6 +53,16 @@ Adding a string: put the English text in `src/i18n/messages/en/<namespace>.ts`, 
 - In the **All** scope other users' players appear as `P-XXXX` (first 4 chars of the opaque player id).
 - Test data is flagged `isTestData: true`; anyone signed in may purge it. Real games can only be deleted by their owner (or an admin).
 
+## Analytics
+
+Three layers, all in `src/analytics/`:
+
+1. **Firestore counters** (always on, cookie-free): `analytics/{day}/counters/{kind}_{source}` = `{ day, n }` for `visit`, `newUser`, `game` and `link` (Google linked) per source and UTC day. No uid or device id is stored; rules only allow `+1` on whitelisted ids, and only admins can read them. Admin visits are not counted, nor is `vite dev` against the live project.
+2. **Cloudflare Web Analytics** (cookie-free page views, referrers, countries): set `VITE_CF_BEACON_TOKEN`. It does not record query strings, so it cannot see utm tags.
+3. **Google Analytics 4** via Firebase: set `VITE_FB_MEASUREMENT_ID`. Loaded only after consent (banner, revocable in **Settings → Privacy**). Page views are sent manually; the first one carries the landing URL with its utm tags. In the GA web stream, turn off *Enhanced measurement → Page changes based on browser history events* to avoid double page views.
+
+The source is taken from `utm_source` → installed app → referrer → `direct` (`src/analytics/source.ts`). The installed app starts at `/?utm_source=pwa&utm_medium=homescreen` (manifest `id` stays `/`). The admin **Developer tools → Analytics** panel shows the counters, activity derived from the games, tagged links to copy and links to the dashboards.
+
 ## Known limitations
 
 - Games are always between two players of one account; two tracker users playing each other would each record their own copy.

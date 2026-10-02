@@ -26,6 +26,7 @@ import { useGame } from '@/hooks/useGames';
 import { usePlayerLabel, usePlayers } from '@/hooks/usePlayers';
 import { useSettings } from '@/hooks/useSettings';
 import { useGamesStore } from '@/store/gamesStore';
+import { recordGameSaved } from '@/analytics';
 import { createGame, InvalidGameError, updateGame } from '@/repo/games';
 import { PlayerDialog } from '@/features/players/PlayerDialog';
 import { fromDatetimeLocal, readJson, toDatetimeLocal, writeStorage } from './gameUtils';
@@ -303,6 +304,7 @@ function Wizard({ game, guest, makeInitial }: WizardProps) {
         savedId = game.id;
       } else {
         savedId = await createGame(uid, input);
+        recordGameSaved({ guest });
       }
       toast.push({
         title: t('games.new.toast.compiled'),

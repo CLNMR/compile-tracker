@@ -18,6 +18,7 @@ export const firebaseConfig = {
   storageBucket: env.VITE_FB_STORAGE_BUCKET as string | undefined,
   messagingSenderId: env.VITE_FB_MESSAGING_SENDER_ID as string | undefined,
   appId: env.VITE_FB_APP_ID as string,
+  measurementId: (env.VITE_FB_MEASUREMENT_ID as string | undefined) || undefined,
 };
 
 export const useEmulators = String(env.VITE_USE_EMULATORS) === 'true';

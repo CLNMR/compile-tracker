@@ -6,7 +6,7 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { collection, deleteDoc, doc, getDoc, getDocs, setDoc, Timestamp } from 'firebase/firestore';
+import { collection, collectionGroup, deleteDoc, doc, getDoc, getDocs, increment, query, setDoc, Timestamp, where } from 'firebase/firestore';
 
 const PROJECT_ID = 'compile-tracker-rules-test';
 const ALICE = 'alice-uid';
@@ -162,5 +162,40 @@ describe('users & stats', () => {
     await assertFails(setDoc(doc(dbAs(ALICE), 'stats', 'global'), { asOf: Timestamp.now() }));
     await assertSucceeds(setDoc(doc(dbAs(ADMIN), 'stats', 'global'), { asOf: Timestamp.now() }));
     await assertSucceeds(getDoc(doc(dbAs(BOB), 'stats', 'global')));
+  });
+});
+
+describe('analytics counters', () => {
+  const counter = (uid: string | null, id = 'visit_reddit', day = '2026-10-03') => doc(dbAs(uid), 'analytics', day, 'counters', id);
+  const bump = (uid: string | null, id?: string, day = '2026-10-03') => setDoc(counter(uid, id, day), { day, n: increment(1) }, { merge: true });
+
+  it('signed-in users can add +1 to whitelisted counters', async () => {
+    await assertSucceeds(bump(ALICE));
+    await assertSucceeds(bump(BOB));
+    await assertSucceeds(bump(ALICE, 'newUser_pwa'));
+    await assertSucceeds(bump(ALICE, 'game_direct'));
+    await assertSucceeds(bump(ALICE, 'link_bgg'));
+    await assertFails(bump(null));
+  });
+
+  it('rejects unknown counters, bad days, extra fields and jumps', async () => {
+    await assertFails(bump(ALICE, 'visit_hackernews'));
+    await assertFails(bump(ALICE, 'pageview_reddit'));
+    await assertFails(bump(ALICE, 'visit_reddit', 'yesterday'));
+    await assertFails(setDoc(counter(ALICE), { day: '2026-10-03', n: 5 }));
+    await assertFails(setDoc(counter(ALICE), { day: '2026-10-02', n: 1 }));
+    await assertFails(setDoc(counter(ALICE), { day: '2026-10-03', n: 1, uid: ALICE }));
+    await assertSucceeds(bump(ALICE));
+    await assertFails(setDoc(counter(ALICE), { day: '2026-10-03', n: 0 }));
+    await assertFails(setDoc(counter(ALICE), { day: '2026-10-03', n: 10 }));
+    await assertFails(deleteDoc(counter(ALICE)));
+  });
+
+  it('only admins can read counters', async () => {
+    await assertSucceeds(bump(ALICE));
+    await assertFails(getDoc(counter(ALICE)));
+    await assertFails(getDocs(query(collectionGroup(dbAs(ALICE), 'counters'), where('day', '>=', '2026-01-01'))));
+    await assertSucceeds(getDocs(query(collectionGroup(dbAs(ADMIN), 'counters'), where('day', '>=', '2026-01-01'))));
+    await assertSucceeds(getDoc(counter(ADMIN)));
   });
 });

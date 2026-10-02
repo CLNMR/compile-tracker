@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Badge, Button, ConfirmDialog, Panel, Select, Switch, TerminalLine, useToast } from '@/components/ui';
+import { GA_CONFIGURED, useConsentStore } from '@/analytics';
 import { SETS } from '@/data/sets';
 import { protocolsInSets } from '@/data/protocols';
 import { useAuth } from '@/hooks/useAuth';
@@ -24,6 +25,7 @@ export default function SettingsPage() {
       <LanguagePanel />
       <AccountPanel />
       <InstallPanel />
+      <PrivacyPanel />
       <DataPanel />
       <AboutPanel />
     </div>
@@ -315,6 +317,32 @@ function InstallPanel() {
         ) : (
           <TerminalLine tone="muted">{t('settings.install.browser')}</TerminalLine>
         )}
+      </div>
+    </Panel>
+  );
+}
+
+function PrivacyPanel() {
+  const { t } = useT();
+  const choice = useConsentStore((st) => st.choice);
+  const grant = useConsentStore((st) => st.grant);
+  const deny = useConsentStore((st) => st.deny);
+
+  return (
+    <Panel title={t('privacy.settings.title')}>
+      <div className={s.stack}>
+        {GA_CONFIGURED ? (
+          <>
+            <Switch
+              checked={choice === 'granted'}
+              onChange={(on) => (on ? grant() : deny())}
+              label={t('privacy.settings.ga')}
+              description={t('privacy.settings.gaDesc')}
+            />
+            <TerminalLine tone="muted">{t(`privacy.settings.status.${choice ?? 'unset'}`)}</TerminalLine>
+          </>
+        ) : null}
+        <p className={s.about}>{t('privacy.settings.cookieFree')}</p>
       </div>
     </Panel>
   );

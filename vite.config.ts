@@ -24,7 +24,9 @@ export default defineConfig({
         background_color: '#0d0a13',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/',
+        // Keep the app identity at '/' (installed apps stay the same app); launches are tagged as source "pwa".
+        id: '/',
+        start_url: '/?utm_source=pwa&utm_medium=homescreen',
         scope: '/',
         icons: [
           { src: 'pwa-192.png', sizes: '192x192', type: 'image/png' },

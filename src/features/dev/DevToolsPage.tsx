@@ -24,6 +24,7 @@ import { useT } from '@/i18n';
 import { deleteAllTestGames, deleteGame, deleteMyGames, deleteMyTestGames, writeGamesBatch } from '@/repo/games';
 import { createPlayers, deleteAllPlayers } from '@/repo/players';
 import { deleteUserSettings } from '@/repo/users';
+import { AnalyticsPanel } from './AnalyticsPanel';
 import s from './DevToolsPage.module.css';
 
 const MIN_PROTOCOLS = 6;
@@ -64,6 +65,8 @@ export default function DevToolsPage() {
         <SectionHeader as="h1">{t('dev.title')}</SectionHeader>
         <TerminalLine tone="warn">{t('dev.warning')}</TerminalLine>
       </div>
+
+      <AnalyticsPanel />
 
       <Panel title={t('dev.log')} headerRight={<Badge mono>{lines.length}</Badge>} padding="sm">
         <div ref={scrollRef} className={s.logScroll}>

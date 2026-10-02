@@ -1,10 +1,12 @@
-import { lazy, Suspense, type ReactNode } from 'react';
-import { createBrowserRouter, Outlet } from 'react-router';
+import { lazy, Suspense, useEffect, type ReactNode } from 'react';
+import { createBrowserRouter, Outlet, useLocation } from 'react-router';
 import { AppShell, NAV_ITEMS, Spinner } from '@/components/ui';
 import { useAuthStore } from '@/store/authStore';
 import { RouteError } from '@/app/RouteError';
 import { EmulatorBanner } from '@/features/dev/EmulatorBanner';
 import { RequireAdmin } from '@/app/RequireAdmin';
+import { ConsentBanner } from '@/app/ConsentBanner';
+import { recordPageView } from '@/analytics';
 
 const HomePage = lazy(() => import('@/features/home/HomePage'));
 const PlayersPage = lazy(() => import('@/features/players/PlayersPage'));
@@ -22,9 +24,12 @@ const GUEST_NAV_ITEMS = NAV_ITEMS.filter((it) => !it.accountOnly);
 
 function Layout() {
   const isAnonymous = useAuthStore((st) => st.isAnonymous);
+  const { pathname } = useLocation();
+  useEffect(() => recordPageView(pathname), [pathname]);
   return (
     <AppShell banner={<EmulatorBanner />} items={isAnonymous ? GUEST_NAV_ITEMS : NAV_ITEMS}>
       <Outlet />
+      <ConsentBanner />
     </AppShell>
   );
 }

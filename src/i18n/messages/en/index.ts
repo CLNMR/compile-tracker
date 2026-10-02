@@ -5,9 +5,10 @@ import { dev } from './dev';
 import { games } from './games';
 import { home } from './home';
 import { players } from './players';
+import { privacy } from './privacy';
 import { protocol } from './protocol';
 import { settings } from './settings';
 import { stats } from './stats';
 import { ui } from './ui';
 
-export const en = { common, app, auth, ui, protocol, home, players, games, stats, settings, dev } as const;
+export const en = { common, app, auth, ui, protocol, home, players, games, stats, settings, privacy, dev } as const;
