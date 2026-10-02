@@ -70,15 +70,6 @@ function switchRequestFrom(e: FirebaseError): SwitchRequest {
   return { credential, email };
 }
 
-/** Popups are unreliable in installed PWAs (notably iOS) — prefer redirect there. */
-function prefersRedirect(): boolean {
-  if (typeof window === 'undefined') return false;
-  const standalone =
-    window.matchMedia('(display-mode: standalone)').matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
-  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  return standalone || ios;
-}
-
 const POPUP_FALLBACK_CODES = new Set([
   'auth/popup-blocked',
   'auth/operation-not-supported-in-this-environment',
@@ -147,17 +138,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const user = get().user;
     if (!user) return { ok: false, reason: 'error', code: 'no-user', message: t('auth.notSignedIn') };
 
-    if (prefersRedirect()) {
-      try {
-        await linkWithRedirect(user, provider());
-        return { ok: false, reason: 'redirecting' };
-      } catch (e) {
-        const d = describe(e);
-        console.error('[auth] linkWithRedirect failed', e);
-        return { ok: false, reason: 'error', ...d };
-      }
-    }
-
+    // Popup first, everywhere: in an installed PWA (iOS especially) a redirect returns into a browser
+    // context with separate storage, so the link never completes in the app. Redirect only when popups fail.
     try {
       const res = await linkWithPopup(user, provider());
       set({ user: res.user, isAnonymous: res.user.isAnonymous });
