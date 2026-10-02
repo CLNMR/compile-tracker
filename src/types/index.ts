@@ -74,7 +74,16 @@ export function yearMonthOf(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-/** Short pseudonymous label shown in "All" scope. */
+/**
+ * Fixed side ids for games recorded while anonymous (no players chosen).
+ * They are shared by every guest, so stats never treat them as real players.
+ */
+export const GUEST_PLAYER_IDS = { p1: 'alpha', p2: 'beta' } as const satisfies Record<SideKey, string>;
+const GUEST_NAMES: Record<string, string> = { alpha: 'Alpha', beta: 'Beta' };
+
+export const isGuestPlayer = (playerId: string): boolean => playerId in GUEST_NAMES;
+
+/** Short pseudonymous label shown in "All" scope; guest sides keep their fixed names. */
 export function pseudonym(playerId: string): string {
-  return `P-${playerId.slice(0, 4).toUpperCase()}`;
+  return GUEST_NAMES[playerId] ?? `P-${playerId.slice(0, 4).toUpperCase()}`;
 }

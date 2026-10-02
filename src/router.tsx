@@ -1,6 +1,7 @@
 import { lazy, Suspense, type ReactNode } from 'react';
 import { createBrowserRouter, Outlet } from 'react-router';
-import { AppShell, Spinner } from '@/components/ui';
+import { AppShell, NAV_ITEMS, Spinner } from '@/components/ui';
+import { useAuthStore } from '@/store/authStore';
 import { RouteError } from '@/app/RouteError';
 import { EmulatorBanner } from '@/features/dev/EmulatorBanner';
 import { RequireAdmin } from '@/app/RequireAdmin';
@@ -17,9 +18,12 @@ const UiKitchenSink = lazy(() => import('@/features/dev/UiKitchenSink'));
 
 const page = (el: ReactNode) => <Suspense fallback={<Spinner />}>{el}</Suspense>;
 
+const GUEST_NAV_ITEMS = NAV_ITEMS.filter((it) => !it.accountOnly);
+
 function Layout() {
+  const isAnonymous = useAuthStore((st) => st.isAnonymous);
   return (
-    <AppShell banner={<EmulatorBanner />}>
+    <AppShell banner={<EmulatorBanner />} items={isAnonymous ? GUEST_NAV_ITEMS : NAV_ITEMS}>
       <Outlet />
     </AppShell>
   );

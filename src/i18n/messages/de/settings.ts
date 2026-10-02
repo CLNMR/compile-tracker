@@ -28,7 +28,7 @@ export const settings: Shape<typeof en> = {
     title: 'Konto',
     anonymous: 'anonym',
     google: 'google',
-    identityAnonymous: 'identität: anonym — daten sind an dieses gerät gebunden',
+    identityAnonymous: 'identität: anonymer gast — spiele werden als Alpha gegen Beta erfasst. verknüpfe google, um spieler zu benennen und eigene statistiken zu sehen.',
     identityGoogle: 'identität: google',
     linkGoogle: 'Google-Konto verknüpfen',
     signOut: 'Abmelden',

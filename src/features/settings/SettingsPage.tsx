@@ -16,10 +16,11 @@ const MIN_PROTOCOLS = 6;
 
 /** /settings — protocol sets, default player, language, account, install, data, about. */
 export default function SettingsPage() {
+  const { isAnonymous } = useAuth();
   return (
     <div className={s.page}>
       <ProtocolSetsPanel />
-      <MePanel />
+      {!isAnonymous ? <MePanel /> : null}
       <LanguagePanel />
       <AccountPanel />
       <InstallPanel />
@@ -321,7 +322,7 @@ function InstallPanel() {
 
 function DataPanel() {
   const { t } = useT();
-  const { uid, isAdmin } = useAuth();
+  const { uid, isAdmin, isAnonymous } = useAuth();
   const { games } = useGames('all');
   const { players } = usePlayers();
   const mine = useMemo(() => games.filter((g) => g.ownerUid === uid).length, [games, uid]);
@@ -330,8 +331,12 @@ function DataPanel() {
     <Panel title={t('settings.data.title')}>
       <div className={s.stack}>
         <div className={s.counts}>
-          <Count label={t('settings.data.myGames')} value={mine} />
-          <Count label={t('settings.data.myPlayers')} value={players.length} />
+          {!isAnonymous ? (
+            <>
+              <Count label={t('settings.data.myGames')} value={mine} />
+              <Count label={t('settings.data.myPlayers')} value={players.length} />
+            </>
+          ) : null}
           <Count label={t('settings.data.gamesInDb')} value={games.length} />
         </div>
         {isAdmin ? (

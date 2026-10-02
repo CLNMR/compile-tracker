@@ -18,7 +18,8 @@ import {
   cx,
   useToast,
 } from '@/components/ui';
-import { useUid } from '@/hooks/useAuth';
+import { Navigate } from 'react-router';
+import { useAuth, useUid } from '@/hooks/useAuth';
 import { usePlayers } from '@/hooks/usePlayers';
 import { useSettings } from '@/hooks/useSettings';
 import { useT } from '@/i18n';
@@ -30,6 +31,13 @@ import s from './PlayersPage.module.css';
 type DialogState = { kind: 'closed' } | { kind: 'create' } | { kind: 'rename'; player: PlayerDoc } | { kind: 'delete'; player: PlayerDoc };
 
 export default function PlayersPage() {
+  const isAnonymous = useAuth().isAnonymous;
+  // Named players need an account; guests record games as Alpha vs Beta.
+  if (isAnonymous) return <Navigate to="/" replace />;
+  return <Players />;
+}
+
+function Players() {
   const { t } = useT();
   const uid = useUid();
   const toast = useToast();

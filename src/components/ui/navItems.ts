@@ -11,6 +11,8 @@ export interface NavItem {
   icon: (p: IconProps) => ReactNode;
   /** Exact match only (for `/` and `/games`). */
   end?: boolean;
+  /** Hidden while anonymous (needs named players / own data). */
+  accountOnly?: boolean;
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -18,6 +20,6 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/games/new', labelKey: 'ui.nav.newGame', icon: IconPlus },
   { to: '/games', labelKey: 'ui.nav.games', icon: IconList, end: true },
   { to: '/stats', labelKey: 'ui.nav.stats', icon: IconChart },
-  { to: '/players', labelKey: 'ui.nav.players', icon: IconUser },
+  { to: '/players', labelKey: 'ui.nav.players', icon: IconUser, accountOnly: true },
   { to: '/settings', labelKey: 'ui.nav.settings', icon: IconSettings },
 ];

@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { deriveWinner, pseudonym, type GameDoc, type GameInput, type PlayerDoc, type SetId, type SideKey } from '@/types';
+import { deriveWinner, GUEST_PLAYER_IDS, pseudonym, type GameDoc, type GameInput, type PlayerDoc, type SetId, type SideKey } from '@/types';
 import { isKnownProtocol, protocolsInSets, setsOf } from '@/data/protocols';
 import {
   Badge,
@@ -21,7 +21,7 @@ import {
 } from '@/components/ui';
 import { ProtocolCard, ProtocolPicker } from '@/components/protocol';
 import { useT, type TKey } from '@/i18n';
-import { useUid } from '@/hooks/useAuth';
+import { useAuth, useUid } from '@/hooks/useAuth';
 import { useGame } from '@/hooks/useGames';
 import { usePlayerLabel, usePlayers } from '@/hooks/usePlayers';
 import { useSettings } from '@/hooks/useSettings';
@@ -73,8 +73,18 @@ function blankState(now: Date): WizardState {
   };
 }
 
+/** Anonymous users skip the player step: the sides are always Alpha vs Beta. */
+function asGuest(st: WizardState): WizardState {
+  return { ...st, p1Id: GUEST_PLAYER_IDS.p1, p2Id: GUEST_PLAYER_IDS.p2, step: st.step === 1 ? 2 : st.step };
+}
+
 /** Restore a previous draft from sessionStorage, dropping anything that no longer makes sense. */
-function restoreDraft(players: PlayerDoc[], defaultPlayerId: string | undefined, now: Date): WizardState {
+function restoreDraft(players: PlayerDoc[], defaultPlayerId: string | undefined, now: Date, guest: boolean): WizardState {
+  const st = restoreDraftFor(players, defaultPlayerId, now);
+  return guest ? asGuest(st) : st;
+}
+
+function restoreDraftFor(players: PlayerDoc[], defaultPlayerId: string | undefined, now: Date): WizardState {
   const base = blankState(now);
   const activeIds = new Set(players.filter((p) => !p.archived).map((p) => p.id));
   if (defaultPlayerId && activeIds.has(defaultPlayerId)) base.p1Id = defaultPlayerId;
@@ -121,6 +131,7 @@ export default function NewGamePage() {
   const { t } = useT();
   const { id } = useParams();
   const uid = useUid();
+  const { isAnonymous } = useAuth();
   const editing = id != null;
   const game = useGame(id);
   const gamesReady = useGamesStore((st) => st.ready);
@@ -163,19 +174,23 @@ export default function NewGamePage() {
         />
       );
     }
-    return <Wizard key={game.id} game={game} makeInitial={() => stateFromGame(game)} />;
+    return (
+      <Wizard key={game.id} game={game} guest={isAnonymous} makeInitial={() => (isAnonymous ? asGuest(stateFromGame(game)) : stateFromGame(game))} />
+    );
   }
 
-  return <Wizard makeInitial={() => restoreDraft(players, defaultPlayerId, new Date())} />;
+  return <Wizard guest={isAnonymous} makeInitial={() => restoreDraft(players, defaultPlayerId, new Date(), isAnonymous)} />;
 }
 
 interface WizardProps {
   /** Present in edit mode. */
   game?: GameDoc;
+  /** Anonymous: no player step, sides fixed to Alpha / Beta. */
+  guest: boolean;
   makeInitial: () => WizardState;
 }
 
-function Wizard({ game, makeInitial }: WizardProps) {
+function Wizard({ game, guest, makeInitial }: WizardProps) {
   const { t, protocolName } = useT();
   const uid = useUid();
   const navigate = useNavigate();
@@ -224,7 +239,9 @@ function Wizard({ game, makeInitial }: WizardProps) {
   // Keep protocols from disabled sets visible when editing an older game.
   const pickerSets: SetId[] = [...new Set<SetId>([...enabledSets, ...setsOf([...st.p1Protocols, ...st.p2Protocols])])];
 
-  const canEnter = (n: Step) => (n === 1 ? true : n === 2 ? step1Ok : step1Ok && step2Ok);
+  const firstStep: Step = guest ? 2 : 1;
+  const steps = guest ? STEPS.filter((x) => x.n !== 1) : STEPS;
+  const canEnter = (n: Step) => (n < firstStep ? false : n === 1 ? true : n === 2 ? step1Ok : step1Ok && step2Ok);
   const stepOk = st.step === 1 ? step1Ok : st.step === 2 ? step2Ok : step3Ok;
 
   /* ---------- handlers ---------- */
@@ -337,7 +354,7 @@ function Wizard({ game, makeInitial }: WizardProps) {
       </SectionHeader>
 
       <ol className={s.stepper} aria-label={t('games.new.stepsAria')}>
-        {STEPS.map(({ n, key }) => {
+        {steps.map(({ n, key }, i) => {
           const current = n === st.step;
           const done = n < st.step;
           return (
@@ -349,7 +366,7 @@ function Wizard({ game, makeInitial }: WizardProps) {
                 disabled={!canEnter(n)}
                 aria-current={current ? 'step' : undefined}
               >
-                <span className={s.stepNum}>0{n}</span>
+                <span className={s.stepNum}>0{i + 1}</span>
                 <span className={s.stepLabel}>{t(key)}</span>
               </button>
             </li>
@@ -357,7 +374,7 @@ function Wizard({ game, makeInitial }: WizardProps) {
         })}
       </ol>
 
-      {st.step === 1 ? (
+      {st.step === 1 && !guest ? (
         <section className={s.step} aria-label={t('games.new.steps.players')}>
           <div className={s.playerGrid}>
             <div className={s.playerField}>
@@ -523,7 +540,7 @@ function Wizard({ game, makeInitial }: WizardProps) {
 
       <footer className={s.footer}>
         <div className={s.footerInner}>
-          {st.step > 1 ? (
+          {st.step > firstStep ? (
             <Button variant="subtle" onClick={back} disabled={saving} iconLeft={<IconChevron direction="left" />}>
               {t('common.actions.back')}
             </Button>

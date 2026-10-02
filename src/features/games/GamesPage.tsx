@@ -16,7 +16,7 @@ import {
   TerminalLine,
 } from '@/components/ui';
 import { useT } from '@/i18n';
-import { useUid } from '@/hooks/useAuth';
+import { useAuth, useUid } from '@/hooks/useAuth';
 import { usePlayers } from '@/hooks/usePlayers';
 import { useGamesStore } from '@/store/gamesStore';
 import { filterKey, useStats, type StatsFilter } from '@/stats';
@@ -38,10 +38,13 @@ export default function GamesPage() {
   const hasPendingWrites = useGamesStore((st) => st.hasPendingWrites);
   const fromCache = useGamesStore((st) => st.fromCache);
 
-  const [scope, setScopeState] = useState<Scope>(() => {
+  const { isAnonymous } = useAuth();
+  const [storedScope, setScopeState] = useState<Scope>(() => {
     const v = readStorage('local', SCOPE_KEY);
     return isScope(v) ? v : 'mine';
   });
+  // Guests have no "my games" view: always the shared list.
+  const scope: Scope = isAnonymous ? 'all' : storedScope;
   const [playerId, setPlayerId] = useState('');
   const [protocolId, setProtocolId] = useState('');
   const [setId, setSetId] = useState('');
@@ -117,15 +120,17 @@ export default function GamesPage() {
       </SectionHeader>
 
       <div className={s.toolbar}>
-        <SegmentedControl<Scope>
-          label={t('common.scope.label')}
-          value={scope}
-          onChange={setScope}
-          options={[
-            { value: 'mine', label: t('common.scope.mine') },
-            { value: 'all', label: t('common.scope.all') },
-          ]}
-        />
+        {!isAnonymous ? (
+          <SegmentedControl<Scope>
+            label={t('common.scope.label')}
+            value={scope}
+            onChange={setScope}
+            options={[
+              { value: 'mine', label: t('common.scope.mine') },
+              { value: 'all', label: t('common.scope.all') },
+            ]}
+          />
+        ) : null}
         <Button to="/games/new" size="sm" iconLeft={<IconPlus />} className={s.newBtn}>
           {t('games.list.newGame')}
         </Button>

@@ -89,6 +89,15 @@ describe('aggregate', () => {
   it('handles an empty input', () => {
     expect(aggregate([])).toEqual(emptyAgg());
   });
+
+  it('counts guest (Alpha/Beta) games for protocols but not for players or head-to-head', () => {
+    const agg = aggregate([mkGame({ p1: { playerId: 'alpha' }, p2: { playerId: 'beta' }, firstPlayer: 'p1' })]);
+    expect(agg.games).toBe(1);
+    expect(agg.byProtocol.fire).toMatchObject({ decks: 1, wins: 1 });
+    expect(agg.firstPlayerKnown).toBe(1);
+    expect(agg.byPlayer).toEqual({});
+    expect(agg.h2h).toEqual({});
+  });
 });
 
 describe('mergeAgg', () => {

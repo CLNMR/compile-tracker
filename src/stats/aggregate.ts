@@ -1,4 +1,4 @@
-import type { Game, GameSide, ProtocolId } from '@/types';
+import { isGuestPlayer, type Game, type GameSide, type ProtocolId } from '@/types';
 
 export interface ProtocolAgg {
   /** Decks (sides) that included this protocol. */
@@ -103,6 +103,8 @@ function foldSide(acc: Agg, side: GameSide, opp: GameSide, won: boolean, first: 
     if (won) tr.wins++;
   }
 
+  // Guest sides (Alpha/Beta) are shared by every anonymous user — not a player.
+  if (isGuestPlayer(side.playerId)) return;
   const pl = (acc.byPlayer[side.playerId] ??= emptyPlayer());
   pl.games++;
   if (won) pl.wins++;
@@ -134,10 +136,12 @@ export function foldGame(acc: Agg, g: Game): Agg {
   foldSide(acc, g.p2, g.p1, !p1Won, g.firstPlayer === 'p2', playedMs);
 
   // Head to head: `a` is the lexicographically smaller player id.
-  const h = (acc.h2h[h2hKey(g.p1.playerId, g.p2.playerId)] ??= { games: 0, aWins: 0 });
-  h.games++;
-  const p1IsA = g.p1.playerId < g.p2.playerId;
-  if (p1IsA === p1Won) h.aWins++;
+  if (!isGuestPlayer(g.p1.playerId) && !isGuestPlayer(g.p2.playerId)) {
+    const h = (acc.h2h[h2hKey(g.p1.playerId, g.p2.playerId)] ??= { games: 0, aWins: 0 });
+    h.games++;
+    const p1IsA = g.p1.playerId < g.p2.playerId;
+    if (p1IsA === p1Won) h.aWins++;
+  }
 
   // Protocol vs protocol: every protocol on p1's side faced every protocol on p2's side.
   for (const a of g.p1.protocols) {

@@ -49,7 +49,7 @@ Adding a string: put the English text in `src/i18n/messages/en/<namespace>.ts`, 
 
 ## Data & privacy
 
-- Anonymous sign-in by default. Link a Google account in Settings to keep your data across devices; an anonymous uid that loses its browser storage loses access to its data.
+- Anonymous sign-in by default (guest mode): games are recorded as Alpha vs Beta without choosing players, and only shared (All) stats are shown. Link a Google account in Settings for named players, your own games and stats, and to keep your data across devices; an anonymous uid that loses its browser storage loses access to its data.
 - In the **All** scope other users' players appear as `P-XXXX` (first 4 chars of the opaque player id).
 - Test data is flagged `isTestData: true`; anyone signed in may purge it. Real games can only be deleted by their owner (or an admin).
 

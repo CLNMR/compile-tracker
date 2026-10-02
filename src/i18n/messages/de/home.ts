@@ -14,9 +14,9 @@ export const home: Shape<typeof en> = {
     allGames: 'Alle Spiele',
   },
   hint: {
-    anonymousBefore: 'du bist anonym — verknüpfe in den ',
     anonymousLink: 'einstellungen',
-    anonymousAfter: ' ein google-konto, damit deine daten auf allen geräten erhalten bleiben.',
+    guestBefore: 'gastmodus — spiele werden als Alpha gegen Beta erfasst. verknüpfe in den ',
+    guestAfter: ' ein google-konto, um benannte spieler und eigene statistiken zu führen.',
     dismiss: 'Hinweis ausblenden',
   },
   empty: {
@@ -31,6 +31,10 @@ export const home: Shape<typeof en> = {
       ready_other: '{count} spieler bereit.',
       line2: 'erfasse deine erste partie, um statistiken freizuschalten.',
     },
+    guest: {
+      line1: 'noch keine spiele erfasst.',
+      line2: 'wähle protokolle für Alpha und Beta, dann kompiliere dein erstes spiel.',
+    },
   },
   tiles: {
     gamesRecorded: 'Erfasste Spiele',
@@ -40,6 +44,9 @@ export const home: Shape<typeof en> = {
     record: '{wins} S · {losses} N',
     setDefault: 'Standardspieler festlegen',
     mostUsed: 'Meistgespieltes Protokoll',
+    firstPlayer: 'Startspieler gewinnt',
+    firstPlayerSub_one: '{count} Spiel mit bekanntem Start',
+    firstPlayerSub_other: '{count} Spiele mit bekanntem Start',
     decksShare_one: '{count} Deck · {share}',
     decksShare_other: '{count} Decks · {share}',
   },

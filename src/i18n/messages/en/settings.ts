@@ -25,7 +25,7 @@ export const settings = {
     title: 'Account',
     anonymous: 'anonymous',
     google: 'google',
-    identityAnonymous: 'identity: anonymous — data is bound to this device',
+    identityAnonymous: 'identity: anonymous guest — games are recorded as Alpha vs Beta. link Google to name players and see your own stats.',
     identityGoogle: 'identity: google',
     linkGoogle: 'Link Google account',
     signOut: 'Sign out',

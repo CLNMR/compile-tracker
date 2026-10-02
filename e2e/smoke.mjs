@@ -30,36 +30,16 @@ try {
   await page.waitForTimeout(1500);
   await shot('01-home-empty');
 
-  step('create players');
+  step('guest: no players page / nav item');
+  if (await page.getByRole('link', { name: /^players$/i }).count()) problems.push('guest: Players link visible');
   await page.goto(`${BASE}/players`, { waitUntil: 'domcontentloaded' });
-  for (const name of ['Colin', 'Anna']) {
-    await page.getByRole('dialog').waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {});
-    await page.getByRole('button', { name: /new player|add player|create/i }).first().click();
-    const dialog = page.getByRole('dialog');
-    await dialog.waitFor({ timeout: 10_000 });
-    const input = dialog.getByRole('textbox').first();
-    await input.fill(name);
-    await input.press('Enter');
-    await page.getByText(name, { exact: true }).first().waitFor({ timeout: 10_000 });
-    await page.waitForTimeout(400);
-  }
-  await shot('02-players');
+  await page.waitForURL(`${BASE}/`, { timeout: 10_000 }).catch(() => problems.push('guest: /players did not redirect to /'));
 
-  step('wizard: new game');
+  step('wizard: new game (Alpha vs Beta, starts at protocols)');
   await page.goto(`${BASE}/games/new`, { waitUntil: 'domcontentloaded' });
-  const pickSelect = async (index, text) => {
-    const trigger = page.getByRole('combobox').nth(index);
-    await trigger.click();
-    const list = page.getByRole('listbox');
-    await list.waitFor({ timeout: 5_000 });
-    if (index === 0) await shot('03a-select-open');
-    await list.getByRole('option', { name: text, exact: true }).click();
-    await list.waitFor({ state: 'hidden', timeout: 5_000 });
-  };
-  await pickSelect(0, 'Colin');
-  await pickSelect(1, 'Anna');
-  await shot('03-wizard-players');
-  await page.getByRole('button', { name: /next|continue|protocols/i }).first().click();
+  await page.getByText('Alpha', { exact: true }).first().waitFor({ timeout: 10_000 }).catch(() => problems.push('wizard: Alpha side missing'));
+  if (await page.getByRole('combobox', { name: /player 1/i }).count()) problems.push('wizard: guest sees player select');
+  await shot('03-wizard-guest');
   // pick 3 protocols per side by clicking cards in each picker
   const pickers = page.locator('[class*="ProtocolPicker"], [data-picker]');
   const cards = page.locator('button[aria-pressed]');
@@ -113,6 +93,8 @@ try {
   await page.goto(`${BASE}/games`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(800);
   await shot('08-games');
+  if (await page.getByRole('radio', { name: /^mine$/i }).count()) problems.push('guest: Mine/All toggle visible on games');
+  if (!(await page.getByText(/Alpha/).count())) problems.push('games: guest game not listed as Alpha');
   const protoFilter = page.getByRole('combobox', { name: /protocol/i }).first();
   if (await protoFilter.count()) {
     await protoFilter.click();
@@ -125,7 +107,7 @@ try {
   await page.goto(`${BASE}/stats`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(800);
   await shot('09-stats-overview');
-  for (const tab of ['Players', 'Protocols', 'Combos', 'Head']) {
+  for (const tab of ['Players', 'Protocols', 'Combos']) {
     const t = page.getByRole('tab', { name: new RegExp(tab, 'i') }).first();
     if (await t.count()) {
       await t.click();
@@ -133,13 +115,8 @@ try {
       await shot(`10-stats-${tab.toLowerCase()}`);
     }
   }
-  // switch to All scope
-  const all = page.getByRole('radio', { name: /^all$/i }).first();
-  if (await all.count()) {
-    await all.click();
-    await page.waitForTimeout(500);
-    await shot('11-stats-all');
-  }
+  if (await page.getByRole('radio', { name: /^mine$/i }).count()) problems.push('guest: Mine/All toggle visible on stats');
+  if (await page.getByRole('tab', { name: /head/i }).count()) problems.push('guest: head-to-head tab visible');
 
   step('settings');
   await page.goto(`${BASE}/settings`, { waitUntil: 'domcontentloaded' });

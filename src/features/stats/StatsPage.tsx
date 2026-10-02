@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Badge, Button, EmptyState, IconChart, IconPlus, SegmentedControl, Spinner, Tabs } from '@/components/ui';
-import { useUid } from '@/hooks/useAuth';
+import { useAuth, useUid } from '@/hooks/useAuth';
 import { useT } from '@/i18n';
 import { useStats } from '@/stats';
 import type { Scope } from '@/types';
@@ -20,7 +20,10 @@ type TabId = 'overview' | 'players' | 'protocols' | 'combos' | 'h2h';
 export default function StatsPage() {
   const { t } = useT();
   const uid = useUid();
-  const [scope, setScope] = useScope();
+  const { isAnonymous } = useAuth();
+  const [storedScope, setScope] = useScope();
+  // Guests have no own players/games: stats always cover everyone.
+  const scope: Scope = isAnonymous ? 'all' : storedScope;
   const [filter, setFilter] = useState<StatsFilterState>(DEFAULT_FILTER_STATE);
   const [tab, setTab] = useState<TabId>('overview');
 
@@ -47,16 +50,18 @@ export default function StatsPage() {
               </Badge>
             ) : null}
             {!loading ? <Badge mono>{t('common.game.games', { count: agg.games })}</Badge> : null}
-            <SegmentedControl<Scope>
-              size="sm"
-              label={t('common.scope.label')}
-              value={scope}
-              onChange={setScope}
-              options={[
-                { value: 'mine', label: t('common.scope.mine') },
-                { value: 'all', label: t('common.scope.all') },
-              ]}
-            />
+            {!isAnonymous ? (
+              <SegmentedControl<Scope>
+                size="sm"
+                label={t('common.scope.label')}
+                value={scope}
+                onChange={setScope}
+                options={[
+                  { value: 'mine', label: t('common.scope.mine') },
+                  { value: 'all', label: t('common.scope.all') },
+                ]}
+              />
+            ) : null}
           </div>
         </div>
       </header>
@@ -72,10 +77,10 @@ export default function StatsPage() {
           { id: 'players', label: t('stats.tabs.players') },
           { id: 'protocols', label: t('stats.tabs.protocols') },
           { id: 'combos', label: t('stats.tabs.combos') },
-          { id: 'h2h', label: t('stats.tabs.h2h'), disabled: scope === 'all' },
+          ...(isAnonymous ? [] : [{ id: 'h2h' as const, label: t('stats.tabs.h2h'), disabled: scope === 'all' }]),
         ]}
       />
-      {scope === 'all' ? <p className={s.hint}>{t('stats.h2hMineOnly')}</p> : null}
+      {scope === 'all' && !isAnonymous ? <p className={s.hint}>{t('stats.h2hMineOnly')}</p> : null}
 
       {loading && agg.games === 0 ? (
         <div className={s.loading}>

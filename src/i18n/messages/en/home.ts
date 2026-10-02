@@ -11,10 +11,10 @@ export const home = {
     allGames: 'All games',
   },
   hint: {
-    /** Rendered as `{before}<Link>{link}</Link>{after}`. */
-    anonymousBefore: 'you are anonymous — link a Google account in ',
+    /** Rendered as `{guestBefore}<Link>{anonymousLink}</Link>{guestAfter}`. */
     anonymousLink: 'Settings',
-    anonymousAfter: ' to keep your data across devices.',
+    guestBefore: 'guest mode — games are recorded as Alpha vs Beta. link a Google account in ',
+    guestAfter: ' to track named players and your own stats.',
     dismiss: 'Dismiss hint',
   },
   empty: {
@@ -29,6 +29,10 @@ export const home = {
       ready_other: '{count} players ready.',
       line2: 'record your first match to unlock stats.',
     },
+    guest: {
+      line1: 'no games recorded yet.',
+      line2: 'pick protocols for Alpha and Beta, then compile your first game.',
+    },
   },
   tiles: {
     gamesRecorded: 'Games recorded',
@@ -38,6 +42,9 @@ export const home = {
     record: '{wins} W · {losses} L',
     setDefault: 'set a default player',
     mostUsed: 'Most used protocol',
+    firstPlayer: 'First player wins',
+    firstPlayerSub_one: '{count} game with known start',
+    firstPlayerSub_other: '{count} games with known start',
     decksShare_one: '{count} deck · {share}',
     decksShare_other: '{count} decks · {share}',
   },
