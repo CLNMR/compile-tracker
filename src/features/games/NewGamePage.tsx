@@ -36,6 +36,8 @@ const STORAGE_KEY = 'compile.newGame.v1';
 
 type Step = 1 | 2 | 3;
 type FirstPlayer = SideKey | 'unknown';
+/** `compiled`: tick compiled protocols, winner derived. `winner`: only who won is known. */
+type ResultMode = 'compiled' | 'winner';
 
 interface WizardState {
   step: Step;
@@ -48,6 +50,9 @@ interface WizardState {
   /** datetime-local string */
   playedAt: string;
   firstPlayer: FirstPlayer;
+  resultMode: ResultMode;
+  /** Winner picked directly in `winner` mode. */
+  pickedWinner: SideKey | null;
   isTestData: boolean;
 }
 
@@ -70,6 +75,8 @@ function blankState(now: Date): WizardState {
     p2Compiled: [],
     playedAt: toDatetimeLocal(now),
     firstPlayer: 'unknown',
+    resultMode: 'compiled',
+    pickedWinner: null,
     isTestData: false,
   };
 }
@@ -107,6 +114,8 @@ function restoreDraftFor(players: PlayerDoc[], defaultPlayerId: string | undefin
     p2Compiled: pick(raw.p2Compiled).filter((id) => p2Protocols.includes(id)),
     playedAt: typeof raw.playedAt === 'string' && fromDatetimeLocal(raw.playedAt) ? raw.playedAt : base.playedAt,
     firstPlayer: raw.firstPlayer === 'p1' || raw.firstPlayer === 'p2' ? raw.firstPlayer : 'unknown',
+    resultMode: raw.resultMode === 'winner' ? 'winner' : 'compiled',
+    pickedWinner: raw.pickedWinner === 'p1' || raw.pickedWinner === 'p2' ? raw.pickedWinner : null,
     isTestData: Boolean(raw.isTestData),
   };
   if (st.p1Id && st.p1Id === st.p2Id) st.p2Id = '';
@@ -124,6 +133,8 @@ function stateFromGame(game: GameDoc): WizardState {
     p2Compiled: [...game.p2.compiled],
     playedAt: toDatetimeLocal(game.playedAt.toDate()),
     firstPlayer: game.firstPlayer ?? 'unknown',
+    resultMode: game.compileUnknown ? 'winner' : 'compiled',
+    pickedWinner: game.compileUnknown ? game.winner : null,
     isTestData: game.isTestData,
   };
 }
@@ -232,7 +243,9 @@ function Wizard({ game, guest, makeInitial }: WizardProps) {
   const step1Ok = !!st.p1Id && !!st.p2Id && st.p1Id !== st.p2Id;
   const overlap = st.p1Protocols.some((id) => st.p2Protocols.includes(id));
   const step2Ok = st.p1Protocols.length === 3 && st.p2Protocols.length === 3 && !overlap;
-  const winner = deriveWinner({ compiled: st.p1Compiled }, { compiled: st.p2Compiled });
+  const winnerOnly = st.resultMode === 'winner';
+  const derivedWinner = deriveWinner({ compiled: st.p1Compiled }, { compiled: st.p2Compiled });
+  const winner = winnerOnly ? st.pickedWinner : derivedWinner;
   const playedAt = fromDatetimeLocal(st.playedAt);
   const step3Ok = winner != null && playedAt != null;
 
@@ -270,6 +283,10 @@ function Wizard({ game, guest, makeInitial }: WizardProps) {
     else patch({ p2Protocols: sorted, p2Compiled: st.p2Compiled.filter((id) => sorted.includes(id)) });
   };
 
+  const setResultMode = (mode: ResultMode) =>
+    // Carry a winner already derived from the ticks over into winner-only mode.
+    patch({ resultMode: mode, pickedWinner: mode === 'winner' ? (st.pickedWinner ?? derivedWinner) : st.pickedWinner });
+
   const toggleCompiled = (side: SideKey, id: string) => {
     const key = side === 'p1' ? 'p1Compiled' : 'p2Compiled';
     const cur = st[key];
@@ -286,6 +303,7 @@ function Wizard({ game, guest, makeInitial }: WizardProps) {
       p2: { playerId: st.p2Id, protocols: st.p2Protocols, compiled: st.p2Compiled },
       winner,
       firstPlayer: st.firstPlayer === 'unknown' ? undefined : st.firstPlayer,
+      compileUnknown: winnerOnly,
       isTestData: st.isTestData,
     };
   };
@@ -317,6 +335,7 @@ function Wizard({ game, guest, makeInitial }: WizardProps) {
           step: 2,
           p1Id: cur.p1Id,
           p2Id: cur.p2Id,
+          resultMode: cur.resultMode,
           isTestData: cur.isTestData,
         }));
         setShowErrors(false);
@@ -488,14 +507,48 @@ function Wizard({ game, guest, makeInitial }: WizardProps) {
             </div>
           </div>
 
-          <TerminalLine tone="muted">{t('games.new.result.hint')}</TerminalLine>
+          <div className={s.resultMeta}>
+            <div className={s.firstField}>
+              <span className={s.fieldLabel}>{t('games.new.result.mode')}</span>
+              <SegmentedControl<ResultMode>
+                fullWidth
+                label={t('games.new.result.mode')}
+                value={st.resultMode}
+                onChange={setResultMode}
+                options={[
+                  { value: 'compiled', label: t('games.new.result.modeCompiled') },
+                  { value: 'winner', label: t('games.new.result.modeWinner') },
+                ]}
+              />
+            </div>
+            {winnerOnly ? (
+              <div className={s.firstField}>
+                <span className={s.fieldLabel}>{t('games.new.result.winner')}</span>
+                <SegmentedControl<SideKey | ''>
+                  fullWidth
+                  label={t('games.new.result.winner')}
+                  value={st.pickedWinner ?? ''}
+                  onChange={(v) => v && patch({ pickedWinner: v })}
+                  options={[
+                    { value: 'p1', label: <span className={s.segLabel}>{p1Name}</span> },
+                    { value: 'p2', label: <span className={s.segLabel}>{p2Name}</span> },
+                  ]}
+                />
+              </div>
+            ) : null}
+          </div>
+
+          <TerminalLine tone="muted">{winnerOnly ? t('games.new.result.winnerHint') : t('games.new.result.hint')}</TerminalLine>
 
           <div className={cx(s.sides, sideBySide && s.sidesWide)}>
             {(['p1', 'p2'] as const).map((side) => {
               const protocols = side === 'p1' ? st.p1Protocols : st.p2Protocols;
-              const compiled = side === 'p1' ? st.p1Compiled : st.p2Compiled;
+              const protocolsCompiled = side === 'p1' ? st.p1Compiled : st.p2Compiled;
               const name = side === 'p1' ? p1Name : p2Name;
               const won = winner === side;
+              // Winner only: the winner compiled all 3 by definition, the loser's progress is unknown.
+              const compiled = winnerOnly ? (won ? protocols : []) : protocolsCompiled;
+              const unknown = winnerOnly && !won;
               return (
                 <section key={side} className={cx(s.side, won && s.sideWon)} aria-label={t('games.new.result.sideAria', { name })}>
                   <header className={s.sideHead}>
@@ -504,12 +557,16 @@ function Wizard({ game, guest, makeInitial }: WizardProps) {
                     <span className={s.sideBadges}>
                       {won ? (
                         <Badge tone="win">{t('games.card.winner')}</Badge>
+                      ) : unknown ? (
+                        <Badge mono title={t('games.card.compiledUnknownTitle')}>
+                          {t('games.card.compiledUnknown')}
+                        </Badge>
                       ) : (
                         <Badge mono>{t('games.card.compiledOf', { compiled: compiled.length })}</Badge>
                       )}
                     </span>
                   </header>
-                  <div className={s.cards}>
+                  <div className={cx(s.cards, unknown && s.cardsUnknown)}>
                     {protocols.map((id) => (
                       <ProtocolCard
                         key={id}
@@ -517,9 +574,15 @@ function Wizard({ game, guest, makeInitial }: WizardProps) {
                         size="md"
                         interactive
                         state={compiled.includes(id) ? 'compiled' : 'loading'}
-                        onClick={() => toggleCompiled(side, id)}
+                        onClick={() => (winnerOnly ? patch({ pickedWinner: side }) : toggleCompiled(side, id))}
                         style={cardStyle}
-                        title={compiled.includes(id) ? t('games.new.result.cardCompiled') : t('games.new.result.cardTap')}
+                        title={
+                          winnerOnly
+                            ? t('games.new.result.cardPickWinner')
+                            : compiled.includes(id)
+                              ? t('games.new.result.cardCompiled')
+                              : t('games.new.result.cardTap')
+                        }
                       />
                     ))}
                   </div>
@@ -530,7 +593,11 @@ function Wizard({ game, guest, makeInitial }: WizardProps) {
 
           {winner == null ? (
             <TerminalLine tone={showErrors ? 'loss' : 'muted'} prompt={showErrors ? '✗' : '>'}>
-              {st.p1Compiled.length === 3 && st.p2Compiled.length === 3 ? t('games.new.result.bothCompiled') : t('games.new.result.noWinner')}
+              {winnerOnly
+                ? t('games.new.result.pickWinner')
+                : st.p1Compiled.length === 3 && st.p2Compiled.length === 3
+                  ? t('games.new.result.bothCompiled')
+                  : t('games.new.result.noWinner')}
             </TerminalLine>
           ) : (
             <TerminalLine tone="win" prompt="✓">

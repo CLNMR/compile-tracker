@@ -9,6 +9,8 @@ export interface MkGameInput {
   p2?: Partial<GameSide>;
   winner?: SideKey;
   firstPlayer?: SideKey;
+  /** Winner only: the loser's compiled list is forced empty. */
+  compileUnknown?: boolean;
   isTestData?: boolean;
 }
 
@@ -23,7 +25,7 @@ export function mkGame(partial: MkGameInput = {}): GameDoc {
   const winner = partial.winner ?? 'p1';
   const side = (key: SideKey, defaults: GameSide, over?: Partial<GameSide>): GameSide => {
     const protocols = [...(over?.protocols ?? defaults.protocols)].sort();
-    const compiled = over?.compiled ? [...over.compiled].sort() : winner === key ? [...protocols] : [];
+    const compiled = winner === key && (partial.compileUnknown || !over?.compiled) ? [...protocols] : partial.compileUnknown ? [] : [...(over?.compiled ?? [])].sort();
     return { playerId: over?.playerId ?? defaults.playerId, protocols, compiled };
   };
   const p1 = side('p1', { playerId: 'A', protocols: ['fire', 'life', 'water'], compiled: [] }, partial.p1);
@@ -47,6 +49,7 @@ export function mkGame(partial: MkGameInput = {}): GameDoc {
     createdAt: playedAt,
   };
   if (partial.firstPlayer) game.firstPlayer = partial.firstPlayer;
+  if (partial.compileUnknown) game.compileUnknown = true;
   return game;
 }
 

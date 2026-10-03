@@ -128,6 +128,20 @@ describe('games', () => {
     await assertFails(setDoc(doc(db, 'games', 'h'), validGame(ALICE, { schemaVersion: 2 })));
   });
 
+  it('winner-only games must leave the loser compiled list empty', async () => {
+    const db = dbAs(ALICE);
+    const loser = { playerId: 'p2xxxxxxxxxxxxxxxxxx', protocols: ['darkness', 'life', 'water'], compiled: [] };
+    await assertSucceeds(setDoc(doc(db, 'games', 'w1'), validGame(ALICE, { compileUnknown: true, p2: loser })));
+    // loser progress present although flagged unknown
+    await assertFails(setDoc(doc(db, 'games', 'w2'), validGame(ALICE, { compileUnknown: true })));
+    // flag must be literally true
+    await assertFails(setDoc(doc(db, 'games', 'w3'), validGame(ALICE, { compileUnknown: false, p2: loser })));
+    // winner still needs all 3
+    await assertFails(
+      setDoc(doc(db, 'games', 'w4'), validGame(ALICE, { compileUnknown: true, p2: loser, p1: { playerId: 'p1xxxxxxxxxxxxxxxxxx', protocols: ['fire', 'plague', 'speed'], compiled: [] } })),
+    );
+  });
+
   it('firstPlayer is optional', async () => {
     const g = validGame();
     delete (g as Record<string, unknown>).firstPlayer;

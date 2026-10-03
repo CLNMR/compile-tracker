@@ -152,7 +152,7 @@ export function HeadToHeadTab({ agg, games }: StatsTabProps) {
                               {tr('stats.form.win')}
                             </Badge>
                             {nameOf(winnerId)}
-                            <span className="muted mono"> {tr('stats.h2h.loserCompiled', { count: loserSide.compiled.length })}</span>
+                            <span className="muted mono"> {g.compileUnknown ? tr('stats.h2h.loserCompiledUnknown') : tr('stats.h2h.loserCompiled', { count: loserSide.compiled.length })}</span>
                             {g.isTestData ? <Badge tone="warn">{tr('stats.h2h.test')}</Badge> : null}
                           </span>
                           <IconChevron direction="right" size={16} className={t.gameArrow} />

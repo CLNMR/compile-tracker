@@ -28,7 +28,7 @@ export const gameConverter: FirestoreDataConverter<GameDoc, DocumentData> = {
     const d = snap.data(options ?? snapshotOptions) as Partial<Game>;
     const p1 = normalizeSide(d.p1);
     const p2 = normalizeSide(d.p2);
-    return {
+    const game: GameDoc = {
       id: snap.id,
       schemaVersion: 1,
       ownerUid: String(d.ownerUid ?? ''),
@@ -42,6 +42,8 @@ export const gameConverter: FirestoreDataConverter<GameDoc, DocumentData> = {
       isTestData: Boolean(d.isTestData),
       createdAt: d.createdAt instanceof Timestamp ? d.createdAt : Timestamp.now(),
     };
+    if (d.compileUnknown === true) game.compileUnknown = true;
+    return game;
   },
 };
 

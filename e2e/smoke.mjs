@@ -81,6 +81,38 @@ try {
   }
   void pickers;
 
+  step('wizard: winner only (compiled protocols unknown)');
+  await page.goto(`${BASE}/games/new`, { waitUntil: 'domcontentloaded' });
+  await page.locator('button[aria-pressed]').first().waitFor({ timeout: 10_000 });
+  {
+    const cards2 = page.locator('button[aria-pressed]');
+    const total = await cards2.count();
+    const mid = Math.floor(total / 2);
+    for (const [start, end] of [[0, mid], [mid, total]]) {
+      let picked = 0;
+      // skip the first few so this game differs from the previous one
+      for (let i = start + 3; i < end && picked < 3; i++) {
+        const c = cards2.nth(i);
+        if (await c.isEnabled()) {
+          await c.click();
+          picked++;
+        }
+      }
+    }
+  }
+  await page.getByRole('button', { name: /next/i }).first().click();
+  await page.getByRole('radio', { name: /winner only/i }).click();
+  const saveWo = page.getByRole('button', { name: /compile game/i }).first();
+  if (await saveWo.isEnabled()) problems.push('winner only: save enabled before a winner was picked');
+  await page.getByRole('radiogroup', { name: /^winner$/i }).getByRole('radio', { name: 'Beta' }).click();
+  await shot('05b-wizard-winner-only');
+  await saveWo.click();
+  await page.waitForURL(/\/games\/[^/]+$/, { timeout: 15_000 }).catch(() => problems.push('winner only: did not navigate to the game'));
+  await page.waitForTimeout(500);
+  if (!(await page.getByText('? / 3').count())) problems.push('winner only: detail does not show "? / 3" for the loser');
+  if (!(await page.getByText(/winner only/i).count())) problems.push('winner only: detail meta missing');
+  await shot('06b-game-detail-winner-only');
+
   step('dev tools gate (non-admin → /settings)');
   await page.goto(`${BASE}/dev`, { waitUntil: 'domcontentloaded' });
   await page.waitForURL(/\/settings$/, { timeout: 15_000 }).catch(() => problems.push('gate: /dev did not redirect non-admin to /settings'));

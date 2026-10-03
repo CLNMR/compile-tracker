@@ -148,6 +148,8 @@ function pickLoserCompiled(rng: () => number, ids: readonly ProtocolId[], count:
   return scored.slice(0, count).map((s) => s.id);
 }
 
+const WINNER_ONLY_SHARE = 0.1;
+
 /**
  * Deterministic, biased test data. Same options → identical output.
  * Every returned input satisfies `buildGame` from `@/repo/games`.
@@ -185,6 +187,8 @@ export function generateGames(opts: GenerateOptions): GameInput[] {
       isTestData: true,
     };
     if (firstPlayer) input.firstPlayer = firstPlayer;
+    // Some results are logged as winner only (loser's compiled protocols unknown).
+    if (rng() < WINNER_ONLY_SHARE) input.compileUnknown = true;
     out.push(input);
   }
 

@@ -19,6 +19,7 @@ export interface ProtocolWinRateRow {
 
 export interface ProtocolCompileRateRow {
   id: ProtocolId;
+  /** Decks with known compile data (winner-only games excluded). */
   decks: number;
   compiled: number;
   rate: number;
@@ -56,6 +57,8 @@ export interface PlayerRecordRow {
   lower: number;
   /** Share of games (with known first player) where this player went first. */
   firstRate: number;
+  /** Games with known compile data; the averages below are over these. */
+  compileGames: number;
   avgCompiledFor: number;
   avgCompiledAgainst: number;
   lastPlayedMs: number;
@@ -83,8 +86,8 @@ export function protocolWinRate(agg: Agg, minDecks = 1): ProtocolWinRateRow[] {
 
 export function protocolCompileRate(agg: Agg, minDecks = 1): ProtocolCompileRateRow[] {
   return Object.entries(agg.byProtocol)
-    .filter(([, p]) => p.decks >= minDecks)
-    .map(([id, p]) => ({ id, decks: p.decks, compiled: p.compiled, rate: rate(p.compiled, p.decks) }))
+    .filter(([, p]) => p.compileDecks >= minDecks)
+    .map(([id, p]) => ({ id, decks: p.compileDecks, compiled: p.compiled, rate: rate(p.compiled, p.compileDecks) }))
     .sort((a, b) => b.rate - a.rate || b.decks - a.decks || byId(a, b));
 }
 
@@ -162,8 +165,9 @@ export function playerRecords(agg: Agg): PlayerRecordRow[] {
         rate: rate(p.wins, p.games),
         lower: wilsonLower(p.wins, p.games),
         firstRate: rate(p.first, p.games),
-        avgCompiledFor: rate(p.compiledFor, p.games),
-        avgCompiledAgainst: rate(p.compiledAgainst, p.games),
+        compileGames: p.compileGames,
+        avgCompiledFor: rate(p.compiledFor, p.compileGames),
+        avgCompiledAgainst: rate(p.compiledAgainst, p.compileGames),
         lastPlayedMs: p.lastPlayedMs,
         favourite,
         best,
@@ -204,11 +208,11 @@ export function gamesOverTime(agg: Agg): { yearMonth: string; games: number }[] 
 }
 
 export function avgLoserCompiled(agg: Agg): number {
-  return rate(agg.loserCompiledSum, agg.games);
+  return rate(agg.loserCompiledSum, agg.compileKnown);
 }
 
 export function loserCompiledDistribution(agg: Agg): { compiled: 0 | 1 | 2; games: number; share: number }[] {
-  return ([0, 1, 2] as const).map((c) => ({ compiled: c, games: agg.loserCompiledHist[c], share: rate(agg.loserCompiledHist[c], agg.games) }));
+  return ([0, 1, 2] as const).map((c) => ({ compiled: c, games: agg.loserCompiledHist[c], share: rate(agg.loserCompiledHist[c], agg.compileKnown) }));
 }
 
 const involves = (g: GameDoc, playerId: string): boolean => g.p1.playerId === playerId || g.p2.playerId === playerId;

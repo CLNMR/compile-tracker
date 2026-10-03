@@ -114,6 +114,13 @@ describe('generateGames', () => {
     expect(inputs.some((g) => g.firstPlayer === 'p2')).toBe(true);
   });
 
+  it('logs roughly 10% of games as winner only', () => {
+    const inputs = generateGames({ ...base, games: 2000 });
+    const share = inputs.filter((g) => g.compileUnknown).length / inputs.length;
+    expect(share).toBeGreaterThan(0.07);
+    expect(share).toBeLessThan(0.13);
+  });
+
   it('uses all players, favouring lower indexes, and biases outcomes by strength', () => {
     const inputs = generateGames({ ...base, games: 3000, enabledSets: [...ALL_SET_IDS] });
     const counts = new Map<string, number>();

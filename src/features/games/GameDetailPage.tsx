@@ -124,6 +124,12 @@ function GameDetail({ game }: { game: GameDoc }) {
           <dd>{dateTime(playedAt)}</dd>
           <dt>{t('games.detail.meta.firstPlayer')}</dt>
           <dd>{firstName ?? <span className={s.dim}>{t('games.detail.meta.unknown')}</span>}</dd>
+          {game.compileUnknown ? (
+            <>
+              <dt>{t('games.detail.meta.compiled')}</dt>
+              <dd className={s.dim}>{t('games.detail.meta.winnerOnly')}</dd>
+            </>
+          ) : null}
           <dt>{t('games.detail.meta.recordedBy')}</dt>
           <dd>{isOwner ? t('games.detail.meta.you') : <span className="mono">{ownerPseudonym(game.ownerUid)}</span>}</dd>
           <dt>{t('games.detail.meta.gameId')}</dt>
@@ -169,7 +175,13 @@ function SidePanel({ game, side, size }: { game: GameDoc; side: SideKey; size: '
   return (
     <section
       className={cx(s.side, won && s.sideWon)}
-      aria-label={won ? t('games.detail.sideAriaWinner', { name }) : t('games.detail.sideAriaCompiled', { name, compiled: data.compiled.length })}
+      aria-label={
+        won
+          ? t('games.detail.sideAriaWinner', { name })
+          : game.compileUnknown
+            ? t('games.detail.sideAriaUnknown', { name })
+            : t('games.detail.sideAriaCompiled', { name, compiled: data.compiled.length })
+      }
     >
       <header className={s.sideHead}>
         <span className={s.sideKey}>{side === 'p1' ? 'P1' : 'P2'}</span>
@@ -180,7 +192,15 @@ function SidePanel({ game, side, size }: { game: GameDoc; side: SideKey; size: '
               {t('games.card.first')}
             </Badge>
           ) : null}
-          {won ? <Badge tone="win">{t('games.card.winner')}</Badge> : <Badge mono>{t('games.card.compiledOf', { compiled: data.compiled.length })}</Badge>}
+          {won ? (
+            <Badge tone="win">{t('games.card.winner')}</Badge>
+          ) : game.compileUnknown ? (
+            <Badge mono title={t('games.card.compiledUnknownTitle')}>
+              {t('games.card.compiledUnknown')}
+            </Badge>
+          ) : (
+            <Badge mono>{t('games.card.compiledOf', { compiled: data.compiled.length })}</Badge>
+          )}
         </span>
       </header>
       <div className={s.cards}>

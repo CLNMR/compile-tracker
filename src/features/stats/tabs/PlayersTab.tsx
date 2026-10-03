@@ -100,7 +100,7 @@ function PlayerRow({ row, name, form, streak, onClick }: { row: PlayerRecordRow;
         {pct(row.firstRate)}
       </Td>
       <Td align="right" mono>
-        {num(row.avgCompiledFor, 2)} / {num(row.avgCompiledAgainst, 2)}
+        {row.compileGames > 0 ? `${num(row.avgCompiledFor, 2)} / ${num(row.avgCompiledAgainst, 2)}` : <span className="muted">–</span>}
       </Td>
       <Td>{row.favourite && isKnownProtocol(row.favourite) ? <ProtocolChip protocolId={row.favourite} size="sm" /> : <span className="muted">–</span>}</Td>
       <Td>{row.best && isKnownProtocol(row.best) ? <ProtocolChip protocolId={row.best} size="sm" /> : <span className="muted">–</span>}</Td>

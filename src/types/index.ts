@@ -25,7 +25,7 @@ export interface GameSide {
   playerId: string;
   /** Exactly 3 distinct protocol ids, sorted. */
   protocols: ProtocolId[];
-  /** Subset of `protocols`: 3 for the winner, 0–2 for the loser. */
+  /** Subset of `protocols`: 3 for the winner, 0–2 for the loser (empty when `compileUnknown`). */
   compiled: ProtocolId[];
 }
 
@@ -41,6 +41,11 @@ export interface Game {
   p2: GameSide;
   winner: SideKey;
   firstPlayer?: SideKey;
+  /**
+   * Only the winner was recorded: the loser's compiled protocols are unknown (stored as empty).
+   * Such games count for wins but are left out of every compile statistic.
+   */
+  compileUnknown?: true;
   /** Union of both sides, 6 sorted ids (for array-contains). */
   allProtocols: ProtocolId[];
   isTestData: boolean;
@@ -56,6 +61,8 @@ export interface GameInput {
   p2: GameSide;
   winner: SideKey;
   firstPlayer?: SideKey;
+  /** Winner only: `compiled` is ignored (winner = all 3, loser = unknown). */
+  compileUnknown?: boolean;
   isTestData?: boolean;
 }
 
@@ -69,6 +76,9 @@ export function deriveWinner(p1: Pick<GameSide, 'compiled'>, p2: Pick<GameSide, 
   if (b && !a) return 'p2';
   return null;
 }
+
+/** Whether a game's compiled protocols can be used for compile statistics. */
+export const compileKnown = (g: Pick<Game, 'compileUnknown'>): boolean => g.compileUnknown !== true;
 
 export function yearMonthOf(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;

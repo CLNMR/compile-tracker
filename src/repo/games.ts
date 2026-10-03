@@ -66,8 +66,11 @@ function assertSide(side: GameSide, key: SideKey) {
 
 /** Build a complete, rule-valid Game from UI input. Pure — exported for tests and the generator. */
 export function buildGame(ownerUid: string, input: GameInput, createdAt: Timestamp | ReturnType<typeof serverTimestamp>): Omit<Game, 'createdAt'> & { createdAt: unknown } {
-  const p1: GameSide = { playerId: input.p1.playerId, protocols: [...input.p1.protocols].sort(), compiled: [...input.p1.compiled].sort() };
-  const p2: GameSide = { playerId: input.p2.playerId, protocols: [...input.p2.protocols].sort(), compiled: [...input.p2.compiled].sort() };
+  const unknown = Boolean(input.compileUnknown);
+  // Winner only: the winner compiled all 3 by definition, the loser's progress is not recorded.
+  const compiledOf = (side: GameSide, key: SideKey) => (!unknown ? side.compiled : key === input.winner ? side.protocols : []);
+  const p1: GameSide = { playerId: input.p1.playerId, protocols: [...input.p1.protocols].sort(), compiled: [...compiledOf(input.p1, 'p1')].sort() };
+  const p2: GameSide = { playerId: input.p2.playerId, protocols: [...input.p2.protocols].sort(), compiled: [...compiledOf(input.p2, 'p2')].sort() };
   assertSide(p1, 'p1');
   assertSide(p2, 'p2');
   if (p1.playerId === p2.playerId) throw new InvalidGameError('samePlayer', 'A player cannot face themselves');
@@ -92,6 +95,7 @@ export function buildGame(ownerUid: string, input: GameInput, createdAt: Timesta
     createdAt,
   };
   if (input.firstPlayer) game.firstPlayer = input.firstPlayer;
+  if (unknown) game.compileUnknown = true;
   return game;
 }
 

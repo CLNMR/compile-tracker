@@ -22,10 +22,10 @@ describe('aggregate', () => {
   });
 
   it('aggregates protocols', () => {
-    expect(agg.byProtocol.fire).toEqual({ decks: 4, wins: 3, compiled: 4, compiledAgainst: 6 });
-    expect(agg.byProtocol.death).toEqual({ decks: 4, wins: 1, compiled: 3, compiledAgainst: 11 });
-    expect(agg.byProtocol.gravity).toEqual({ decks: 2, wins: 0, compiled: 0, compiledAgainst: 6 });
-    expect(agg.byProtocol.speed).toEqual({ decks: 2, wins: 1, compiled: 2, compiledAgainst: 5 });
+    expect(agg.byProtocol.fire).toEqual({ decks: 4, wins: 3, compileDecks: 4, compiled: 4, compiledAgainst: 6 });
+    expect(agg.byProtocol.death).toEqual({ decks: 4, wins: 1, compileDecks: 4, compiled: 3, compiledAgainst: 11 });
+    expect(agg.byProtocol.gravity).toEqual({ decks: 2, wins: 0, compileDecks: 2, compiled: 0, compiledAgainst: 6 });
+    expect(agg.byProtocol.speed).toEqual({ decks: 2, wins: 1, compileDecks: 2, compiled: 2, compiledAgainst: 5 });
     const totalDecks = Object.values(agg.byProtocol).reduce((s, p) => s + p.decks, 0);
     expect(totalDecks).toBe(agg.games * 6);
   });
@@ -88,6 +88,19 @@ describe('aggregate', () => {
 
   it('handles an empty input', () => {
     expect(aggregate([])).toEqual(emptyAgg());
+  });
+
+  it('counts winner-only games for wins but leaves them out of every compile stat', () => {
+    const withUnknown = aggregate([...FIXTURE_GAMES, mkGame({ compileUnknown: true, firstPlayer: 'p1' })]);
+    const base = aggregate(FIXTURE_GAMES);
+    expect(withUnknown.games).toBe(base.games + 1);
+    expect(withUnknown.compileKnown).toBe(base.games);
+    expect(withUnknown.byProtocol.fire).toEqual({ ...base.byProtocol.fire, decks: 5, wins: 4 });
+    expect(withUnknown.byProtocol.gravity).toEqual({ ...base.byProtocol.gravity, decks: 3 });
+    expect(withUnknown.byPlayer.A).toMatchObject({ games: base.byPlayer.A.games + 1, wins: base.byPlayer.A.wins + 1, compileGames: base.byPlayer.A.compileGames, compiledFor: base.byPlayer.A.compiledFor });
+    expect(withUnknown.loserCompiledSum).toBe(base.loserCompiledSum);
+    expect(withUnknown.loserCompiledHist).toEqual(base.loserCompiledHist);
+    expect(withUnknown.firstPlayerKnown).toBe(base.firstPlayerKnown + 1);
   });
 
   it('counts guest (Alpha/Beta) games for protocols but not for players or head-to-head', () => {

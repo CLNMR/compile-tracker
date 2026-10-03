@@ -55,7 +55,7 @@ export function OverviewTab({ agg }: StatsTabProps) {
           sub={fp.n > 0 ? tr('stats.overview.sampleN', { n: fp.n }) : tr('stats.overview.fpUnknown')}
           tone={fp.n > 0 ? (fp.rate > 0.55 ? 'warn' : fp.rate < 0.45 ? 'accent' : 'default') : 'default'}
         />
-        <StatTile label={tr('stats.overview.loserCompiledAvg')} value={num(loserAvg, 2)} sub={tr('stats.overview.perLoss')} />
+        <StatTile label={tr('stats.overview.loserCompiledAvg')} value={agg.compileKnown > 0 ? num(loserAvg, 2) : '–'} sub={tr('stats.overview.perLoss')} />
         <StatTile label={tr('stats.overview.protocolsSeen')} value={num(distinct)} sub={tr('stats.overview.distinct')} />
       </div>
 

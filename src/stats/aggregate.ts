@@ -1,10 +1,12 @@
-import { isGuestPlayer, type Game, type GameSide, type ProtocolId } from '@/types';
+import { compileKnown, isGuestPlayer, type Game, type GameSide, type ProtocolId } from '@/types';
 
 export interface ProtocolAgg {
   /** Decks (sides) that included this protocol. */
   decks: number;
   /** Of those decks, how many won. */
   wins: number;
+  /** Decks with known compile data (not winner-only games): the denominator for `compiled`/`compiledAgainst`. */
+  compileDecks: number;
   /** Times this protocol was compiled by its own deck. */
   compiled: number;
   /** Total protocols the opponent compiled in games where this protocol was in the deck. */
@@ -17,6 +19,8 @@ export interface PlayerAgg {
   /** Games where this player went first (only counted when `firstPlayer` is known). */
   first: number;
   firstWins: number;
+  /** Games with known compile data: the denominator for `compiledFor`/`compiledAgainst`. */
+  compileGames: number;
   /** Sum of protocols compiled by this player. */
   compiledFor: number;
   /** Sum of protocols compiled by the opponents of this player. */
@@ -41,6 +45,8 @@ export interface Agg {
   byMonth: Record<string, { games: number }>;
   firstPlayerWins: number;
   firstPlayerKnown: number;
+  /** Games with known compile data (winner-only games excluded): the denominator for loser stats. */
+  compileKnown: number;
   loserCompiledSum: number;
   /** How many games the loser compiled 0, 1, 2 protocols. */
   loserCompiledHist: [number, number, number];
@@ -62,6 +68,7 @@ export const emptyAgg = (): Agg => ({
   byMonth: {},
   firstPlayerWins: 0,
   firstPlayerKnown: 0,
+  compileKnown: 0,
   loserCompiledSum: 0,
   loserCompiledHist: [0, 0, 0],
 });
@@ -71,22 +78,26 @@ const emptyPlayer = (): PlayerAgg => ({
   wins: 0,
   first: 0,
   firstWins: 0,
+  compileGames: 0,
   compiledFor: 0,
   compiledAgainst: 0,
   lastPlayedMs: 0,
   protocolDecks: {},
 });
 
-function foldSide(acc: Agg, side: GameSide, opp: GameSide, won: boolean, first: boolean, playedMs: number): void {
+function foldSide(acc: Agg, side: GameSide, opp: GameSide, won: boolean, first: boolean, playedMs: number, known: boolean): void {
   const oppCompiled = opp.compiled.length;
   const ps = side.protocols;
 
   for (const p of ps) {
-    const pa = (acc.byProtocol[p] ??= { decks: 0, wins: 0, compiled: 0, compiledAgainst: 0 });
+    const pa = (acc.byProtocol[p] ??= { decks: 0, wins: 0, compileDecks: 0, compiled: 0, compiledAgainst: 0 });
     pa.decks++;
     if (won) pa.wins++;
-    if (side.compiled.includes(p)) pa.compiled++;
-    pa.compiledAgainst += oppCompiled;
+    if (known) {
+      pa.compileDecks++;
+      if (side.compiled.includes(p)) pa.compiled++;
+      pa.compiledAgainst += oppCompiled;
+    }
   }
 
   for (let i = 0; i < ps.length; i++) {
@@ -112,8 +123,11 @@ function foldSide(acc: Agg, side: GameSide, opp: GameSide, won: boolean, first: 
     pl.first++;
     if (won) pl.firstWins++;
   }
-  pl.compiledFor += side.compiled.length;
-  pl.compiledAgainst += oppCompiled;
+  if (known) {
+    pl.compileGames++;
+    pl.compiledFor += side.compiled.length;
+    pl.compiledAgainst += oppCompiled;
+  }
   if (playedMs > pl.lastPlayedMs) pl.lastPlayedMs = playedMs;
   for (const p of ps) {
     const pd = (pl.protocolDecks[p] ??= { decks: 0, wins: 0 });
@@ -131,9 +145,10 @@ export function foldGame(acc: Agg, g: Game): Agg {
   const p1Won = g.winner === 'p1';
   const loser = p1Won ? g.p2 : g.p1;
   const playedMs = g.playedAt.toMillis();
+  const known = compileKnown(g);
 
-  foldSide(acc, g.p1, g.p2, p1Won, g.firstPlayer === 'p1', playedMs);
-  foldSide(acc, g.p2, g.p1, !p1Won, g.firstPlayer === 'p2', playedMs);
+  foldSide(acc, g.p1, g.p2, p1Won, g.firstPlayer === 'p1', playedMs, known);
+  foldSide(acc, g.p2, g.p1, !p1Won, g.firstPlayer === 'p2', playedMs, known);
 
   // Head to head: `a` is the lexicographically smaller player id.
   if (!isGuestPlayer(g.p1.playerId) && !isGuestPlayer(g.p2.playerId)) {
@@ -158,9 +173,12 @@ export function foldGame(acc: Agg, g: Game): Agg {
     if (g.firstPlayer === g.winner) acc.firstPlayerWins++;
   }
 
-  const lc = Math.min(2, Math.max(0, loser.compiled.length));
-  acc.loserCompiledSum += lc;
-  acc.loserCompiledHist[lc]++;
+  if (known) {
+    const lc = Math.min(2, Math.max(0, loser.compiled.length));
+    acc.compileKnown++;
+    acc.loserCompiledSum += lc;
+    acc.loserCompiledHist[lc]++;
+  }
 
   return acc;
 }
@@ -194,6 +212,7 @@ function mergePlayer(a: PlayerAgg, b: PlayerAgg): PlayerAgg {
     wins: a.wins + b.wins,
     first: a.first + b.first,
     firstWins: a.firstWins + b.firstWins,
+    compileGames: a.compileGames + b.compileGames,
     compiledFor: a.compiledFor + b.compiledFor,
     compiledAgainst: a.compiledAgainst + b.compiledAgainst,
     lastPlayedMs: Math.max(a.lastPlayedMs, b.lastPlayedMs),
@@ -223,6 +242,7 @@ export function mergeAgg(a: Agg, b: Agg): Agg {
     byMonth: mergeCountRecords(a.byMonth, b.byMonth),
     firstPlayerWins: a.firstPlayerWins + b.firstPlayerWins,
     firstPlayerKnown: a.firstPlayerKnown + b.firstPlayerKnown,
+    compileKnown: a.compileKnown + b.compileKnown,
     loserCompiledSum: a.loserCompiledSum + b.loserCompiledSum,
     loserCompiledHist: [
       a.loserCompiledHist[0] + b.loserCompiledHist[0],

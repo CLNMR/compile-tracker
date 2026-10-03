@@ -25,6 +25,8 @@ interface Row {
   /** False when below the min-sample threshold (win rate shown muted, Wilson hidden). */
   ranked: boolean;
   compiled: number;
+  /** Decks with known compile data (winner-only games excluded). */
+  compileDecks: number;
   compileRate: number;
 }
 
@@ -57,6 +59,7 @@ function buildRows(agg: Agg, minSample: number): Row[] {
         lower: w?.lower ?? 0,
         ranked: u.decks >= minSample,
         compiled: c?.compiled ?? 0,
+        compileDecks: c?.decks ?? 0,
         compileRate: c?.rate ?? 0,
       };
     });
@@ -159,7 +162,11 @@ export function ProtocolsTab({ agg, minSample }: StatsTabProps) {
                     </Td>
                     <Td align="right">{r.ranked ? <WilsonValue value={pct(r.lower)} /> : <span className="muted mono">–</span>}</Td>
                     <Td align="right">
-                      <NumBar label={pct(r.compileRate)} value={r.compileRate} max={1} color="var(--accent)" />
+                      {r.compileDecks > 0 ? (
+                        <NumBar label={pct(r.compileRate)} value={r.compileRate} max={1} color="var(--accent)" />
+                      ) : (
+                        <span className="muted mono">–</span>
+                      )}
                     </Td>
                   </TableRow>
                 );
@@ -220,8 +227,8 @@ function ProtocolDetail({ agg, id, minSample, row }: { agg: Agg; id: ProtocolId;
           <StatTile
             size="sm"
             label={tr('common.game.compiled')}
-            value={pct(row?.compileRate ?? 0)}
-            sub={row ? tr('stats.protocols.detail.compiledOf', { compiled: row.compiled, decks: row.decks }) : undefined}
+            value={row?.compileDecks ? pct(row.compileRate) : '–'}
+            sub={row ? tr('stats.protocols.detail.compiledOf', { compiled: row.compiled, decks: row.compileDecks }) : undefined}
           />
         </div>
       </div>

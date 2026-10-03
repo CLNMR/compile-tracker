@@ -21,7 +21,7 @@ service cloud.firestore {
 
     function validGame(d) {
       return d.keys().hasOnly(['schemaVersion', 'ownerUid', 'playedAt', 'yearMonth', 'p1', 'p2',
-                               'winner', 'firstPlayer', 'allProtocols', 'isTestData', 'createdAt'])
+                               'winner', 'firstPlayer', 'compileUnknown', 'allProtocols', 'isTestData', 'createdAt'])
         && d.schemaVersion == 1
         && d.ownerUid == request.auth.uid
         && d.playedAt is timestamp
@@ -33,6 +33,8 @@ service cloud.firestore {
         // loser compiled 0–2
         && d[loserKey(d)].compiled.size() < 3
         && (!('firstPlayer' in d) || d.firstPlayer in ['p1', 'p2'])
+        // winner only: the loser's compiled protocols were not recorded
+        && (!('compileUnknown' in d) || (d.compileUnknown == true && d[loserKey(d)].compiled.size() == 0))
         && d.allProtocols is list && d.allProtocols.size() == 6
         // 6 distinct protocols across both sides
         && d.allProtocols.toSet().size() == 6

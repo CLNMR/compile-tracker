@@ -65,6 +65,17 @@ describe('protocolCompileRate', () => {
     // rate 1 group: fire (4), water (3), life (2), speed (2) → decks desc then id
     expect(ids(rows.slice(0, 4))).toEqual(['fire', 'water', 'life', 'speed']);
   });
+
+  it('leaves winner-only games out of the denominator', () => {
+    const withUnknown = aggregate([...FIXTURE_GAMES, mkGame({ compileUnknown: true })]);
+    const rows = protocolCompileRate(withUnknown, 1);
+    expect(rows.find((r) => r.id === 'fire')).toEqual({ id: 'fire', decks: 4, compiled: 4, rate: 1 });
+    expect(rows.find((r) => r.id === 'gravity')).toEqual({ id: 'gravity', decks: 2, compiled: 0, rate: 0 });
+    // a protocol seen only in winner-only games has no compile rate at all
+    const only = aggregate([mkGame({ compileUnknown: true })]);
+    expect(protocolCompileRate(only, 1)).toEqual([]);
+    expect(playerRecords(only).find((r) => r.playerId === 'A')).toMatchObject({ games: 1, wins: 1, compileGames: 0, avgCompiledFor: 0 });
+  });
 });
 
 describe('bestCombos', () => {
@@ -132,6 +143,7 @@ describe('playerRecords', () => {
       rate: 2 / 3,
       lower: wilsonLower(2, 3),
       firstRate: 1 / 3,
+      compileGames: 3,
       avgCompiledFor: 8 / 3,
       avgCompiledAgainst: 2,
       lastPlayedMs: new Date(2025, 2, 15, 12).getTime(),
@@ -199,6 +211,12 @@ describe('loser compiled', () => {
       { compiled: 2, games: 2, share: 0.5 },
     ]);
     expect(avgLoserCompiled(emptyAgg())).toBe(0);
+  });
+
+  it('ignores winner-only games', () => {
+    const withUnknown = aggregate([...FIXTURE_GAMES, mkGame({ compileUnknown: true })]);
+    expect(avgLoserCompiled(withUnknown)).toBe(1.25);
+    expect(loserCompiledDistribution(withUnknown).map((d) => d.share)).toEqual([0.25, 0.25, 0.5]);
   });
 });
 

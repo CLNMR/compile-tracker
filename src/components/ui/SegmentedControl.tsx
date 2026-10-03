@@ -57,15 +57,17 @@ export function SegmentedControl<T extends string>({
       className={cx(s.root, s[size], fullWidth && s.full, className)}
       onKeyDown={onKeyDown}
     >
-      {options.map((o) => {
+      {options.map((o, i) => {
         const active = o.value === value;
+        // With nothing selected, the first option takes the tab stop.
+        const tabStop = active || (i === 0 && !options.some((x) => x.value === value));
         return (
           <button
             key={o.value}
             type="button"
             role="radio"
             aria-checked={active}
-            tabIndex={active ? 0 : -1}
+            tabIndex={tabStop ? 0 : -1}
             data-value={o.value}
             disabled={o.disabled}
             className={cx(s.option, active && s.active)}
