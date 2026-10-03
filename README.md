@@ -15,7 +15,7 @@ npm run dev
 Firebase project: `compile-tracker-cln` (see `.firebaserc`). The Firebase CLI account for this directory is bound with `firebase login:use`.
 
 ### One-time Firebase console steps
-1. **Authentication → Get started**, then enable **Anonymous** and **Google** sign-in providers.
+1. **Authentication → Get started**, then enable **Anonymous**, **Google** and **Email/Password** sign-in providers (email link sign-in stays off).
 2. Authentication → Settings → Authorized domains: make sure the hosting domain(s) (`compile-tracker-cln.web.app`, `compile-tracker-cln.firebaseapp.com`) and `localhost` are listed.
 3. (Optional) Admin: open the app → Settings, copy your uid, put it into `isAdmin()` in `firestore.rules` and `VITE_ADMIN_UIDS` in `.env.local`, then `npm run deploy:rules` and rebuild.
 
@@ -49,13 +49,13 @@ Adding a string: put the English text in `src/i18n/messages/en/<namespace>.ts`, 
 
 ## Data & privacy
 
-- Anonymous sign-in by default (guest mode): games are recorded as Alpha vs Beta without choosing players, and only shared (All) stats are shown. Link a Google account in Settings for named players, your own games and stats, and to keep your data across devices; an anonymous uid that loses its browser storage loses access to its data.
+- Anonymous sign-in by default (guest mode): games are recorded as Alpha vs Beta without choosing players, and only shared (All) stats are shown. Create an account in Settings, by linking Google or with email and password, for named players, your own games and stats, and to keep your data across devices; an anonymous uid that loses its browser storage loses access to its data.
 - In the **All** scope other users' players appear as `P-XXXX` (first 4 chars of the opaque player id).
 - Test data is flagged `isTestData: true`; anyone signed in may purge it. Real games can only be deleted by their owner (or an admin).
 
 ## Friends and shared games
 
-Google-linked accounts only (rules check `sign_in_provider != 'anonymous'`).
+Non-anonymous accounts only, Google or email (rules check `sign_in_provider != 'anonymous'`).
 
 - **Handles**: `handles/{handle} = { uid }` (unique by doc id) and `profiles/{uid} = { handle }`, written together in one batch. QR codes encode `/add/<handle>`, which opens the Players page with the handle looked up.
 - **Friends**: `users/{uid}/friends/{friendUid} = { since, playerId? }`. Adding writes my doc and the mirror doc in the friend's account in one batch (the mirror may only carry `since`). `playerId` links the friend to one of my players.
@@ -66,7 +66,7 @@ Google-linked accounts only (rules check `sign_in_provider != 'anonymous'`).
 
 Three layers, all in `src/analytics/`:
 
-1. **Firestore counters** (always on, cookie-free): `analytics/{day}/counters/{kind}_{source}` = `{ day, n }` for `visit`, `newUser`, `game` and `link` (Google linked) per source and UTC day. No uid or device id is stored; rules only allow `+1` on whitelisted ids, and only admins can read them. Admin visits are not counted, nor is `vite dev` against the live project. Each Google link also bumps the all-time total `analytics/total/counters/link` (seeded on 2026-10-03 with the number of Google-linked Firebase Auth accounts), which the admin panel shows as "Accounts ever" — anonymous accounts are not counted.
+1. **Firestore counters** (always on, cookie-free): `analytics/{day}/counters/{kind}_{source}` = `{ day, n }` for `visit`, `newUser`, `game` and `link` (account created, Google or email) per source and UTC day. No uid or device id is stored; rules only allow `+1` on whitelisted ids, and only admins can read them. Admin visits are not counted, nor is `vite dev` against the live project. Each new account also bumps the all-time total `analytics/total/counters/link` (seeded on 2026-10-03 with the number of Google-linked Firebase Auth accounts), which the admin panel shows as "Accounts ever" — anonymous accounts are not counted.
 2. **Cloudflare Web Analytics** (cookie-free page views, referrers, countries): set `VITE_CF_BEACON_TOKEN`. It does not record query strings, so it cannot see utm tags.
 3. **Google Analytics 4** via Firebase: set `VITE_FB_MEASUREMENT_ID`. Loaded only after consent (banner, revocable in **Settings → Privacy**). Page views are sent manually; the first one carries the landing URL with its utm tags. Turn off GA's own SPA page views to avoid doubles: GA → Admin → Data collection and modification → Data streams → the web stream → Enhanced measurement (gear icon) → Page views → *Show advanced settings* → uncheck *Page changes based on browser history events* → Save. Check in the browser (with consent given and no ad blocker): GA's `/g/collect` requests should contain exactly one `page_view` per route change, and `dataLayer` should hold no `gtm.historyChange` entries. (Do not rely on `vtp_enableHistoryEvents` in gtag.js — it stays `true` regardless of this setting.)
 
@@ -81,4 +81,5 @@ The source is taken from `utm_source` → installed app → referrer → `direct
 
 - If two friends both record the same game, both copies exist; the recipient can decline the offered one.
 - Deleting a game removes it for friends who accepted it too (it is the same document).
-- Google linking fails with `credential-already-in-use` if that Google account already has data — the UI offers to switch; the anonymous data stays under the old uid.
+- Google linking fails with `credential-already-in-use` if that Google account already has data — the UI offers to switch; the anonymous data stays under the old uid. Email works the same way: "Create account" keeps the guest data, "Sign in" switches to the existing account and leaves it behind.
+- Email accounts are not verified; password reset uses Firebase's default email template (Authentication → Templates).
