@@ -9,7 +9,12 @@ service cloud.firestore {
     function isAdmin() { return signedIn() && request.auth.uid in ['lZnbYJhKdjQi6CDr3m23v2mmSGF2']; }
 
     // Google-linked (non-anonymous) account: required for handles, friends and offers.
-    function realAccount() { return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous'; }
+    // Google or a confirmed email/password account (unconfirmed addresses can't use friends).
+    function realAccount() {
+      return signedIn()
+        && request.auth.token.firebase.sign_in_provider != 'anonymous'
+        && (request.auth.token.firebase.sign_in_provider != 'password' || request.auth.token.email_verified == true);
+    }
 
     function validSide(s) {
       return s.keys().hasOnly(['playerId', 'protocols', 'compiled'])

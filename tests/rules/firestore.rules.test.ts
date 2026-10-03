@@ -232,8 +232,9 @@ describe('analytics counters', () => {
 const CAROL = 'carol-uid';
 /** A Google-linked (non-anonymous) user. */
 const realAs = (uid: string) => env.authenticatedContext(uid, { firebase: { sign_in_provider: 'google.com' } }).firestore();
-/** An email/password account. */
-const emailAs = (uid: string) => env.authenticatedContext(uid, { firebase: { sign_in_provider: 'password' } }).firestore();
+/** An email/password account, confirmed or not. */
+const emailAs = (uid: string, verified = true) =>
+  env.authenticatedContext(uid, { email_verified: verified, firebase: { sign_in_provider: 'password' } }).firestore();
 const anonAs = (uid: string) => env.authenticatedContext(uid, { firebase: { sign_in_provider: 'anonymous' } }).firestore();
 
 function claim(db: Firestore, uid: string, handle: string, previous?: string) {
@@ -273,6 +274,13 @@ describe('handles and profiles', () => {
     await claim(realAs(ALICE), ALICE, 'alice');
     const db = emailAs(CAROL);
     await assertSucceeds(befriend(db, CAROL, ALICE));
+  });
+
+  it('unconfirmed email accounts cannot claim handles or add friends', async () => {
+    await claim(realAs(ALICE), ALICE, 'alice');
+    await assertFails(claim(emailAs(CAROL, false), CAROL, 'carol'));
+    await claim(emailAs(CAROL), CAROL, 'carol'); // confirmed later
+    await assertFails(befriend(emailAs(CAROL, false), CAROL, ALICE));
   });
 
   it('handles are unique, well-formed and must match the profile', async () => {
