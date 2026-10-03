@@ -126,7 +126,7 @@ export const dev = {
       visits: 'Visits',
       newUsers: 'New users',
       games: 'Games',
-      links: 'Google',
+      links: 'Accounts',
       perVisit: 'Games / visit',
     },
     source: {
@@ -148,9 +148,9 @@ export const dev = {
       active: 'Active accounts',
       activeSub: 'recorded a game in range',
       new: 'New accounts',
-      newSub: 'linked to Google in range',
+      newSub: 'created in range (Google or email)',
       all: 'Accounts ever',
-      allSub: 'linked to Google, all time',
+      allSub: 'Google or email, all time',
     },
     links: {
       title: 'Tagged links',

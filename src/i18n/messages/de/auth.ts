@@ -6,6 +6,10 @@ export const auth: Shape<typeof en> = {
     title: 'Google-Konto verknüpft',
     description: 'Deine Daten folgen jetzt deiner Google-Anmeldung.',
   },
+  linkedEmail: {
+    title: 'Konto erstellt',
+    description: 'Deine Daten folgen jetzt deiner E-Mail-Anmeldung.',
+  },
   linkFailed: {
     title: 'Konto konnte nicht verknüpft werden',
   },

@@ -102,9 +102,10 @@ export function recordGameSaved({ guest }: { guest: boolean }) {
   gaEvent('game_saved', { guest });
 }
 
-export function recordGoogleLinked() {
+/** The anonymous identity became a real account (Google or email/password). */
+export function recordAccountLinked(method: 'google' | 'password') {
   count('link');
-  gaEvent('google_linked');
+  gaEvent(method === 'google' ? 'google_linked' : 'email_linked');
 }
 
 export function recordPlayerCreated() {

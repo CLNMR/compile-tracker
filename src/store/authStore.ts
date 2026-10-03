@@ -1,11 +1,15 @@
 import { create } from 'zustand';
 import {
+  EmailAuthProvider,
   getRedirectResult,
   GoogleAuthProvider,
+  linkWithCredential,
   linkWithPopup,
   linkWithRedirect,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   signInAnonymously,
+  signInWithEmailAndPassword,
   signInWithCredential,
   signInWithPopup,
   signOut as fbSignOut,
@@ -14,7 +18,7 @@ import {
 } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
 import { ADMIN_UIDS, auth } from '@/firebase/app';
-import { recordGoogleLinked, recordNewUser } from '@/analytics';
+import { recordAccountLinked, recordNewUser } from '@/analytics';
 import { t } from '@/i18n';
 
 /** Raised when the Google account is already bound to another Compile Tracker identity. */
@@ -22,6 +26,41 @@ export interface SwitchRequest {
   /** Credential recovered from the error; null when Firebase didn't attach one (we then re-prompt). */
   credential: AuthCredential | null;
   email: string | null;
+}
+
+/** Error codes of the email/password flows the UI explains; anything else is shown raw. */
+export type EmailErrorCode = 'emailInUse' | 'invalidEmail' | 'weakPassword' | 'wrongCredentials' | 'tooManyRequests' | 'network' | 'other';
+
+export class EmailAuthError extends Error {
+  constructor(
+    public readonly code: EmailErrorCode,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'EmailAuthError';
+  }
+}
+
+const EMAIL_ERRORS: Record<string, EmailErrorCode> = {
+  'auth/email-already-in-use': 'emailInUse',
+  'auth/credential-already-in-use': 'emailInUse',
+  'auth/provider-already-linked': 'emailInUse',
+  'auth/invalid-email': 'invalidEmail',
+  'auth/missing-email': 'invalidEmail',
+  'auth/weak-password': 'weakPassword',
+  'auth/missing-password': 'weakPassword',
+  'auth/invalid-credential': 'wrongCredentials',
+  'auth/invalid-login-credentials': 'wrongCredentials',
+  'auth/wrong-password': 'wrongCredentials',
+  'auth/user-not-found': 'wrongCredentials',
+  'auth/user-disabled': 'wrongCredentials',
+  'auth/too-many-requests': 'tooManyRequests',
+  'auth/network-request-failed': 'network',
+};
+
+function emailError(e: unknown): EmailAuthError {
+  const d = describe(e);
+  return new EmailAuthError(EMAIL_ERRORS[d.code] ?? 'other', `${d.message} (${d.code})`);
 }
 
 export type LinkResult =
@@ -47,6 +86,11 @@ interface AuthState {
   linkGoogle: () => Promise<LinkResult>;
   /** Sign in with the Google account that already owns data. The current anonymous data stays under the old uid. */
   switchToExistingGoogle: () => Promise<void>;
+  /** Turn the anonymous identity into an email/password account; its games and players stay. */
+  createEmailAccount: (email: string, password: string) => Promise<void>;
+  /** Sign in to an existing email account. The current anonymous data stays under the old uid. */
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
   clearSwitchRequest: () => void;
   clearRedirectNotice: () => void;
   signOut: () => Promise<void>;
@@ -97,7 +141,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     getRedirectResult(auth)
       .then((res) => {
         if (res?.user) {
-          recordGoogleLinked();
+          recordAccountLinked('google');
           set({ redirectNotice: { tone: 'win', title: t('auth.linked.title'), description: t('auth.linked.description') } });
         }
       })
@@ -148,7 +192,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // context with separate storage, so the link never completes in the app. Redirect only when popups fail.
     try {
       const res = await linkWithPopup(user, provider());
-      recordGoogleLinked();
+      recordAccountLinked('google');
       set({ user: res.user, isAnonymous: res.user.isAnonymous });
       return { ok: true };
     } catch (e) {
@@ -194,6 +238,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const d = describe(e);
       console.error('[auth] switch to existing Google account failed', e);
       throw new Error(`${d.message} (${d.code})`);
+    }
+  },
+
+  createEmailAccount: async (email, password) => {
+    const user = get().user;
+    if (!user) throw new EmailAuthError('other', t('auth.notSignedIn'));
+    try {
+      const res = await linkWithCredential(user, EmailAuthProvider.credential(email.trim(), password));
+      recordAccountLinked('password');
+      set({ user: res.user, isAnonymous: res.user.isAnonymous });
+    } catch (e) {
+      console.error('[auth] linkWithCredential (email) failed', e);
+      throw emailError(e);
+    }
+  },
+
+  signInWithEmail: async (email, password) => {
+    try {
+      await signInWithEmailAndPassword(auth, email.trim(), password);
+    } catch (e) {
+      throw emailError(e);
+    }
+  },
+
+  sendPasswordReset: async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+    } catch (e) {
+      throw emailError(e);
     }
   },
 

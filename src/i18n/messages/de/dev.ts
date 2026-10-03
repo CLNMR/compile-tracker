@@ -125,7 +125,7 @@ export const dev: Shape<typeof en> = {
       visits: 'Besuche',
       newUsers: 'Neue Nutzer',
       games: 'Spiele',
-      links: 'Google',
+      links: 'Konten',
       perVisit: 'Spiele / Besuch',
     },
     source: {
@@ -147,9 +147,9 @@ export const dev: Shape<typeof en> = {
       active: 'Aktive Konten',
       activeSub: 'Spiel im Zeitraum erfasst',
       new: 'Neue Konten',
-      newSub: 'im Zeitraum mit Google verknüpft',
+      newSub: 'im Zeitraum erstellt (Google oder E-Mail)',
       all: 'Konten insgesamt',
-      allSub: 'mit Google verknüpft, gesamt',
+      allSub: 'Google oder E-Mail, gesamt',
     },
     links: {
       title: 'Markierte Links',

@@ -78,8 +78,8 @@ export const friends = {
   },
   addRoute: {
     title: 'Add @{handle} as a friend',
-    line1: 'friends need a Google-linked account.',
-    line2: 'link Google in Settings, then open this link again.',
+    line1: 'friends need an account (Google or email).',
+    line2: 'create one in Settings, then open this link again.',
     settings: 'Open Settings',
   },
   offers: {

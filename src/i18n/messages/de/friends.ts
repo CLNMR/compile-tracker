@@ -80,8 +80,8 @@ export const friends: Shape<typeof en> = {
   },
   addRoute: {
     title: '@{handle} als Freund hinzufügen',
-    line1: 'Freunde brauchen ein mit Google verknüpftes Konto.',
-    line2: 'verknüpfe Google in den Einstellungen und öffne den Link dann erneut.',
+    line1: 'Freunde brauchen ein Konto (Google oder E-Mail).',
+    line2: 'erstelle eins in den Einstellungen und öffne den Link dann erneut.',
     settings: 'Einstellungen öffnen',
   },
   offers: {

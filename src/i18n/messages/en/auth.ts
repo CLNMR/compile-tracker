@@ -4,6 +4,10 @@ export const auth = {
     title: 'Google account linked',
     description: 'Your data now follows your Google sign-in.',
   },
+  linkedEmail: {
+    title: 'Account created',
+    description: 'Your data now follows your email sign-in.',
+  },
   linkFailed: {
     title: 'Could not link account',
   },

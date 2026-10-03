@@ -13,7 +13,7 @@ export const home = {
   hint: {
     /** Rendered as `{guestBefore}<Link>{anonymousLink}</Link>{guestAfter}`. */
     anonymousLink: 'Settings',
-    guestBefore: 'guest mode — games are recorded as Alpha vs Beta. link a Google account in ',
+    guestBefore: 'guest mode — games are recorded as Alpha vs Beta. create an account in ',
     guestAfter: ' to track named players and your own stats.',
     dismiss: 'Dismiss hint',
   },

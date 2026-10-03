@@ -15,8 +15,8 @@ export const home: Shape<typeof en> = {
   },
   hint: {
     anonymousLink: 'einstellungen',
-    guestBefore: 'gastmodus — spiele werden als Alpha gegen Beta erfasst. verknüpfe in den ',
-    guestAfter: ' ein google-konto, um benannte spieler und eigene statistiken zu führen.',
+    guestBefore: 'gastmodus — spiele werden als Alpha gegen Beta erfasst. erstelle in den ',
+    guestAfter: ' ein konto (google oder e-mail), um benannte spieler und eigene statistiken zu führen.',
     dismiss: 'Hinweis ausblenden',
   },
   empty: {

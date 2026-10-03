@@ -27,10 +27,43 @@ export const settings: Shape<typeof en> = {
   account: {
     title: 'Konto',
     anonymous: 'anonym',
-    google: 'google',
-    identityAnonymous: 'identität: anonymer gast — spiele werden als Alpha gegen Beta erfasst. verknüpfe google, um spieler zu benennen und eigene statistiken zu sehen.',
-    identityGoogle: 'identität: google',
+    method: {
+      google: 'google',
+      email: 'e-mail',
+    },
+    identityAnonymous:
+      'identität: anonymer gast — spiele werden als Alpha gegen Beta erfasst. erstelle ein konto mit google oder e-mail, um spieler zu benennen und eigene statistiken zu sehen.',
+    identity: {
+      google: 'identität: google',
+      email: 'identität: e-mail',
+    },
     linkGoogle: 'Google-Konto verknüpfen',
+    useEmail: 'E-Mail & Passwort',
+    email: {
+      title: 'E-Mail-Konto',
+      modeCreate: 'Konto erstellen',
+      modeSignIn: 'Anmelden',
+      createHint: 'deine spiele und spieler auf diesem gerät wandern ins neue konto.',
+      signInHint: 'die anmeldung wechselt zu diesem konto — als gast erfasste spiele auf diesem gerät bleiben zurück.',
+      email: 'E-Mail',
+      password: 'Passwort',
+      passwordHint: 'Mindestens {min} Zeichen.',
+      create: 'Konto erstellen',
+      signIn: 'Anmelden',
+      signedIn: 'Angemeldet',
+      forgot: 'Passwort vergessen?',
+      resetSent: 'E-Mail zum Zurücksetzen gesendet',
+      resetSentDesc: 'Falls {email} ein Konto hat, ist ein Link zum Festlegen eines neuen Passworts unterwegs.',
+      errors: {
+        emailInUse: 'Für diese E-Mail gibt es schon ein Konto. Melde dich stattdessen an.',
+        invalidEmail: 'Gib eine gültige E-Mail-Adresse ein.',
+        weakPassword: 'Das Passwort braucht mindestens 6 Zeichen.',
+        wrongCredentials: 'E-Mail oder Passwort falsch.',
+        tooManyRequests: 'Zu viele Versuche. Warte kurz und versuch es erneut.',
+        network: 'Keine Verbindung. Prüfe dein Netzwerk und versuch es erneut.',
+        resetNeedsEmail: 'Gib zuerst deine E-Mail-Adresse ein.',
+      },
+    },
     signOut: 'Abmelden',
     uidTitle: 'Deine Nutzer-ID',
     toast: {
@@ -55,8 +88,9 @@ export const settings: Shape<typeof en> = {
       title: 'Abmelden?',
       confirm: 'Abmelden',
       anonymousBody:
-        'Du bist anonym. Beim Abmelden wird eine neue anonyme Identität erstellt — die Daten dieser Identität sind dann nicht mehr erreichbar, es sei denn, du verknüpfst vorher ein Google-Konto.',
+        'Du bist anonym. Beim Abmelden wird eine neue anonyme Identität erstellt — die Daten dieser Identität sind dann nicht mehr erreichbar, es sei denn, du erstellst vorher ein Konto.',
       googleBody: 'Für dieses Gerät wird eine neue anonyme Identität erstellt. Melde dich wieder mit Google an, um zu deinen Daten zurückzukehren.',
+      emailBody: 'Für dieses Gerät wird eine neue anonyme Identität erstellt. Melde dich wieder mit E-Mail und Passwort an, um zu deinen Daten zurückzukehren.',
     },
   },
   install: {

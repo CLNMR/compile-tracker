@@ -24,10 +24,43 @@ export const settings = {
   account: {
     title: 'Account',
     anonymous: 'anonymous',
-    google: 'google',
-    identityAnonymous: 'identity: anonymous guest — games are recorded as Alpha vs Beta. link Google to name players and see your own stats.',
-    identityGoogle: 'identity: google',
+    method: {
+      google: 'google',
+      email: 'email',
+    },
+    identityAnonymous:
+      'identity: anonymous guest — games are recorded as Alpha vs Beta. create an account with Google or email to name players and see your own stats.',
+    identity: {
+      google: 'identity: google',
+      email: 'identity: email',
+    },
     linkGoogle: 'Link Google account',
+    useEmail: 'Email & password',
+    email: {
+      title: 'Email account',
+      modeCreate: 'Create account',
+      modeSignIn: 'Sign in',
+      createHint: 'your games and players on this device move into the new account.',
+      signInHint: 'signing in switches to that account — games recorded as a guest on this device stay behind.',
+      email: 'Email',
+      password: 'Password',
+      passwordHint: 'At least {min} characters.',
+      create: 'Create account',
+      signIn: 'Sign in',
+      signedIn: 'Signed in',
+      forgot: 'Forgot password?',
+      resetSent: 'Reset email sent',
+      resetSentDesc: 'If {email} has an account, a link to set a new password is on its way.',
+      errors: {
+        emailInUse: 'This email already has an account. Sign in instead.',
+        invalidEmail: 'Enter a valid email address.',
+        weakPassword: 'The password must have at least 6 characters.',
+        wrongCredentials: 'Wrong email or password.',
+        tooManyRequests: 'Too many attempts. Wait a moment and try again.',
+        network: 'No connection. Check your network and try again.',
+        resetNeedsEmail: 'Enter your email address first.',
+      },
+    },
     signOut: 'Sign out',
     uidTitle: 'Your user id',
     toast: {
@@ -53,8 +86,9 @@ export const settings = {
       title: 'Sign out?',
       confirm: 'Sign out',
       anonymousBody:
-        'You are anonymous. Signing out creates a new anonymous identity, and the data bound to this one becomes unreachable unless you link a Google account first.',
+        'You are anonymous. Signing out creates a new anonymous identity, and the data bound to this one becomes unreachable unless you create an account first.',
       googleBody: 'A new anonymous identity is created for this device. Sign in with Google again to get back to your data.',
+      emailBody: 'A new anonymous identity is created for this device. Sign in with your email and password again to get back to your data.',
     },
   },
   install: {

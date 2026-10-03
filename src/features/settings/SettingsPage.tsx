@@ -10,6 +10,7 @@ import { usePlayers } from '@/hooks/usePlayers';
 import { useSettings } from '@/hooks/useSettings';
 import { isLocale, localeFromBrowser, useLocaleStore, useT } from '@/i18n';
 import type { SetId } from '@/types';
+import { EmailAccountDialog } from './EmailAccountDialog';
 import s from './SettingsPage.module.css';
 
 const APP_VERSION = (import.meta.env.VITE_APP_VERSION as string | undefined) ?? '0.1.0';
@@ -156,8 +157,11 @@ function AccountPanel() {
   }, [redirectNotice, clearRedirectNotice, toast]);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
 
-  const googleEmail = user?.providerData.find((p) => p.providerId === 'google.com')?.email ?? user?.email ?? null;
+  const google = user?.providerData.find((p) => p.providerId === 'google.com');
+  const method = google ? 'google' : 'email';
+  const accountEmail = google?.email ?? user?.email ?? null;
 
   const onLink = async () => {
     setLinking(true);
@@ -218,7 +222,7 @@ function AccountPanel() {
       title={t('settings.account.title')}
       headerRight={
         <Badge tone={isAnonymous ? 'warn' : 'win'} dot>
-          {isAnonymous ? t('settings.account.anonymous') : t('settings.account.google')}
+          {isAnonymous ? t('settings.account.anonymous') : t(`settings.account.method.${method}`)}
         </Badge>
       }
     >
@@ -227,8 +231,8 @@ function AccountPanel() {
           <TerminalLine tone="muted">{t('settings.account.identityAnonymous')}</TerminalLine>
         ) : (
           <TerminalLine tone="win" prompt="✓">
-            {t('settings.account.identityGoogle')}
-            {googleEmail ? ` — ${googleEmail}` : ''}
+            {t(`settings.account.identity.${method}`)}
+            {accountEmail ? ` — ${accountEmail}` : ''}
           </TerminalLine>
         )}
 
@@ -236,6 +240,11 @@ function AccountPanel() {
           {isAnonymous ? (
             <Button onClick={() => void onLink()} loading={linking}>
               {t('settings.account.linkGoogle')}
+            </Button>
+          ) : null}
+          {isAnonymous ? (
+            <Button variant="ghost" onClick={() => setEmailOpen(true)}>
+              {t('settings.account.useEmail')}
             </Button>
           ) : null}
           <Button variant="ghost" onClick={() => setConfirmSignOut(true)}>
@@ -274,8 +283,10 @@ function AccountPanel() {
         danger={isAnonymous}
         loading={signingOut}
       >
-        {isAnonymous ? t('settings.account.signOutDialog.anonymousBody') : t('settings.account.signOutDialog.googleBody')}
+        {isAnonymous ? t('settings.account.signOutDialog.anonymousBody') : t(`settings.account.signOutDialog.${method}Body`)}
       </ConfirmDialog>
+
+      <EmailAccountDialog open={emailOpen} onClose={() => setEmailOpen(false)} />
     </Panel>
   );
 }
