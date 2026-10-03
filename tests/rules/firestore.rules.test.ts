@@ -205,6 +205,19 @@ describe('analytics counters', () => {
     await assertFails(deleteDoc(counter(ALICE)));
   });
 
+  it('the all-time accounts total only accepts +1 steps', async () => {
+    const total = (uid: string | null, id = 'newUser') => doc(dbAs(uid), 'analytics', 'total', 'counters', id);
+    const bumpTotal = (uid: string | null, id?: string) => setDoc(total(uid, id), { day: 'total', n: increment(1) }, { merge: true });
+    await assertSucceeds(bumpTotal(ALICE));
+    await assertSucceeds(bumpTotal(BOB));
+    await assertFails(bumpTotal(null));
+    await assertFails(bumpTotal(ALICE, 'visit'));
+    await assertFails(setDoc(total(ALICE), { day: 'total', n: 50 }));
+    await assertFails(setDoc(total(ALICE), { day: '2026-10-03', n: 3 }));
+    await assertFails(getDoc(total(ALICE)));
+    await assertSucceeds(getDoc(total(ADMIN)));
+  });
+
   it('only admins can read counters', async () => {
     await assertSucceeds(bump(ALICE));
     await assertFails(getDoc(counter(ALICE)));

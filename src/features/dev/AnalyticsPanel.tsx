@@ -4,7 +4,7 @@ import { CANONICAL_ORIGIN, CF_CONFIGURED, GA_CONFIGURED, SOURCES, useConsentStor
 import { Button, Panel, SegmentedControl, StatTile, TerminalLine, useToast } from '@/components/ui';
 import { useGames } from '@/hooks/useGames';
 import { useT } from '@/i18n';
-import { fetchCounters } from '@/repo/analytics';
+import { fetchAccountsTotal, fetchCounters } from '@/repo/analytics';
 import { dayKey, gameActivity, summarizeCounters, type CounterRow } from '@/stats/growth';
 import { DataTable, Td, TableRow, type DataTableColumn } from '@/features/stats/Bits';
 import {
@@ -46,6 +46,7 @@ export function AnalyticsPanel() {
   const { games } = useGames('all');
   const [range, setRange] = useState<Range>('30');
   const [rows, setRows] = useState<CounterRow[] | null>(null);
+  const [accountsTotal, setAccountsTotal] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
   const [now, setNow] = useState(() => Date.now());
@@ -54,10 +55,11 @@ export function AnalyticsPanel() {
 
   useEffect(() => {
     let alive = true;
-    fetchCounters(dayKey(Date.now() - (MAX_DAYS - 1) * DAY_MS))
-      .then((r) => {
+    Promise.all([fetchCounters(dayKey(Date.now() - (MAX_DAYS - 1) * DAY_MS)), fetchAccountsTotal()])
+      .then(([r, total]) => {
         if (!alive) return;
         setRows(r);
+        setAccountsTotal(total);
         setError(null);
       })
       .catch((e: unknown) => alive && setError(e instanceof Error ? e.message : String(e)))
@@ -124,8 +126,20 @@ export function AnalyticsPanel() {
             })}
           />
           <StatTile size="sm" label={t('dev.analytics.activity.active')} value={number(activity.activeOwners)} sub={t('dev.analytics.activity.activeSub')} />
-          <StatTile size="sm" tone="accent" label={t('dev.analytics.activity.new')} value={number(activity.newOwners)} sub={t('dev.analytics.activity.newSub')} />
-          <StatTile size="sm" label={t('dev.analytics.activity.all')} value={number(activity.allOwners)} sub={t('dev.analytics.activity.allSub')} />
+          {/* Created accounts come from the newUser counters; "with a game" from the games themselves. */}
+          <StatTile
+            size="sm"
+            tone="accent"
+            label={t('dev.analytics.activity.new')}
+            value={rows ? number(summary.totals.newUser) : '–'}
+            sub={t('dev.analytics.activity.newSub', { withGame: number(activity.newOwners) })}
+          />
+          <StatTile
+            size="sm"
+            label={t('dev.analytics.activity.all')}
+            value={accountsTotal != null ? number(accountsTotal) : '–'}
+            sub={t('dev.analytics.activity.allSub', { withGame: number(activity.allOwners) })}
+          />
         </div>
 
         <div className={s.row}>

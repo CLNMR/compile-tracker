@@ -78,9 +78,17 @@ service cloud.firestore {
         && request.resource.data.n is int;
     }
 
+    // All-time number of created accounts, no source split: analytics/total/counters/newUser = { day: 'total', n }.
+    function validTotal(day, cid) {
+      return day == 'total' && cid == 'newUser'
+        && request.resource.data.keys().hasOnly(['day', 'n'])
+        && request.resource.data.day == 'total'
+        && request.resource.data.n is int;
+    }
+
     match /analytics/{day}/counters/{cid} {
-      allow create: if signedIn() && validCounter(day, cid) && request.resource.data.n == 1;
-      allow update: if signedIn() && validCounter(day, cid) && request.resource.data.n == resource.data.n + 1;
+      allow create: if signedIn() && (validCounter(day, cid) || validTotal(day, cid)) && request.resource.data.n == 1;
+      allow update: if signedIn() && (validCounter(day, cid) || validTotal(day, cid)) && request.resource.data.n == resource.data.n + 1;
     }
 
     match /{path=**}/counters/{cid} {
