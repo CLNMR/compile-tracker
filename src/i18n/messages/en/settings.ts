@@ -58,6 +58,7 @@ export const settings = {
         wrongCredentials: 'Wrong email or password.',
         tooManyRequests: 'Too many attempts. Wait a moment and try again.',
         network: 'No connection. Check your network and try again.',
+        expiredCode: 'This link has expired or was already used.',
         resetNeedsEmail: 'Enter your email address first.',
       },
     },

@@ -76,6 +76,7 @@ export const friends = {
     cameraFailed: 'camera unavailable: {error}',
     notOurs: 'this QR code is not a Compile Tracker friend code.',
   },
+  verifyFirst: 'Confirm your email address to pick a handle and add friends.',
   addRoute: {
     title: 'Add @{handle} as a friend',
     line1: 'friends need an account (Google or email).',

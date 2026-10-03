@@ -78,6 +78,7 @@ export const friends: Shape<typeof en> = {
     cameraFailed: 'Kamera nicht verfügbar: {error}',
     notOurs: 'dieser QR-Code ist kein Compile-Tracker-Freundes-Code.',
   },
+  verifyFirst: 'Bestätige deine E-Mail-Adresse, um ein Handle zu wählen und Freunde hinzuzufügen.',
   addRoute: {
     title: '@{handle} als Freund hinzufügen',
     line1: 'Freunde brauchen ein Konto (Google oder E-Mail).',

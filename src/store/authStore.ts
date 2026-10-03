@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import {
+  applyActionCode,
+  confirmPasswordReset,
   EmailAuthProvider,
   getRedirectResult,
   GoogleAuthProvider,
@@ -7,12 +9,15 @@ import {
   linkWithPopup,
   linkWithRedirect,
   onAuthStateChanged,
+  reload,
+  sendEmailVerification,
   sendPasswordResetEmail,
   signInAnonymously,
   signInWithEmailAndPassword,
   signInWithCredential,
   signInWithPopup,
   signOut as fbSignOut,
+  verifyPasswordResetCode,
   type AuthCredential,
   type User,
 } from 'firebase/auth';
@@ -29,7 +34,7 @@ export interface SwitchRequest {
 }
 
 /** Error codes of the email/password flows the UI explains; anything else is shown raw. */
-export type EmailErrorCode = 'emailInUse' | 'invalidEmail' | 'weakPassword' | 'wrongCredentials' | 'tooManyRequests' | 'network' | 'other';
+export type EmailErrorCode = 'expiredCode' | 'emailInUse' | 'invalidEmail' | 'weakPassword' | 'wrongCredentials' | 'tooManyRequests' | 'network' | 'other';
 
 export class EmailAuthError extends Error {
   constructor(
@@ -55,8 +60,22 @@ const EMAIL_ERRORS: Record<string, EmailErrorCode> = {
   'auth/user-not-found': 'wrongCredentials',
   'auth/user-disabled': 'wrongCredentials',
   'auth/too-many-requests': 'tooManyRequests',
+  'auth/expired-action-code': 'expiredCode',
+  'auth/invalid-action-code': 'expiredCode',
   'auth/network-request-failed': 'network',
 };
+
+/**
+ * Email/password accounts must confirm their address before using friends (firestore.rules checks
+ * `email_verified` for `sign_in_provider == 'password'`). Google accounts are verified by Google.
+ */
+export function needsEmailVerification(user: User | null): boolean {
+  if (!user || user.isAnonymous || user.emailVerified) return false;
+  return user.providerData.some((p) => p.providerId === 'password') && !user.providerData.some((p) => p.providerId === 'google.com');
+}
+
+/** Where the verification email's "continue" link leads. */
+const continueUrl = () => ({ url: `${location.origin}/players` });
 
 function emailError(e: unknown): EmailAuthError {
   const d = describe(e);
@@ -78,6 +97,8 @@ interface AuthState {
   isAnonymous: boolean;
   isAdmin: boolean;
   uid: string | null;
+  /** Email account whose address is not confirmed yet: friends are locked. */
+  needsVerification: boolean;
   /** Set when linking hit `credential-already-in-use` (popup or redirect); Settings shows the switch dialog. */
   switchRequest: SwitchRequest | null;
   /** Result of a redirect-based link, surfaced after the page reloads. */
@@ -91,6 +112,14 @@ interface AuthState {
   /** Sign in to an existing email account. The current anonymous data stays under the old uid. */
   signInWithEmail: (email: string, password: string) => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
+  /** Sends (again) the confirmation email to the signed-in email account. */
+  sendVerification: () => Promise<void>;
+  /** Reloads the user after the address was confirmed elsewhere; refreshes the token so rules see it. Returns true when verified. */
+  refreshVerification: () => Promise<boolean>;
+  /** Email action links (/auth/action): confirm an address, check and use a password reset code. */
+  applyVerifyCode: (code: string) => Promise<void>;
+  checkResetCode: (code: string) => Promise<string>;
+  confirmReset: (code: string, password: string) => Promise<void>;
   clearSwitchRequest: () => void;
   clearRedirectNotice: () => void;
   signOut: () => Promise<void>;
@@ -130,6 +159,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAnonymous: true,
   isAdmin: false,
   uid: null,
+  needsVerification: false,
   switchRequest: null,
   redirectNotice: null,
 
@@ -174,13 +204,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         uid: user.uid,
         isAnonymous: user.isAnonymous,
         isAdmin: ADMIN_UIDS.includes(user.uid),
+        needsVerification: needsEmailVerification(user),
         loading: false,
         error: null,
       });
     });
+    // Back from the mail app: the address may have been confirmed in the meantime.
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && get().needsVerification) void get().refreshVerification();
+    };
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       started = false;
       unsub();
+      document.removeEventListener('visibilitychange', onVisible);
     };
   },
 
@@ -247,7 +284,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const res = await linkWithCredential(user, EmailAuthProvider.credential(email.trim(), password));
       recordAccountLinked('password');
-      set({ user: res.user, isAnonymous: res.user.isAnonymous });
+      set({ user: res.user, isAnonymous: res.user.isAnonymous, needsVerification: needsEmailVerification(res.user) });
+      sendEmailVerification(res.user, continueUrl()).catch((e: unknown) => console.warn('[auth] verification email failed', e));
     } catch (e) {
       console.error('[auth] linkWithCredential (email) failed', e);
       throw emailError(e);
@@ -265,6 +303,57 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   sendPasswordReset: async (email) => {
     try {
       await sendPasswordResetEmail(auth, email.trim());
+    } catch (e) {
+      throw emailError(e);
+    }
+  },
+
+  sendVerification: async () => {
+    const user = auth.currentUser;
+    if (!user) throw new EmailAuthError('other', t('auth.notSignedIn'));
+    try {
+      await sendEmailVerification(user, continueUrl());
+    } catch (e) {
+      throw emailError(e);
+    }
+  },
+
+  refreshVerification: async () => {
+    const user = auth.currentUser;
+    if (!user) return false;
+    try {
+      await reload(user);
+    } catch (e) {
+      console.warn('[auth] reload failed', e);
+      return false;
+    }
+    const fresh = auth.currentUser;
+    if (!fresh || fresh.uid !== user.uid) return false;
+    if (fresh.emailVerified) await fresh.getIdToken(true); // new token carries email_verified for the rules
+    set({ user: fresh, needsVerification: needsEmailVerification(fresh) });
+    return fresh.emailVerified;
+  },
+
+  applyVerifyCode: async (code) => {
+    try {
+      await applyActionCode(auth, code);
+    } catch (e) {
+      throw emailError(e);
+    }
+    await get().refreshVerification();
+  },
+
+  checkResetCode: async (code) => {
+    try {
+      return await verifyPasswordResetCode(auth, code);
+    } catch (e) {
+      throw emailError(e);
+    }
+  },
+
+  confirmReset: async (code, password) => {
+    try {
+      await confirmPasswordReset(auth, code, password);
     } catch (e) {
       throw emailError(e);
     }

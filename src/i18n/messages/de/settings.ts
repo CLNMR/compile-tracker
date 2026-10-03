@@ -61,6 +61,7 @@ export const settings: Shape<typeof en> = {
         wrongCredentials: 'E-Mail oder Passwort falsch.',
         tooManyRequests: 'Zu viele Versuche. Warte kurz und versuch es erneut.',
         network: 'Keine Verbindung. Prüfe dein Netzwerk und versuch es erneut.',
+        expiredCode: 'Dieser Link ist abgelaufen oder wurde schon benutzt.',
         resetNeedsEmail: 'Gib zuerst deine E-Mail-Adresse ein.',
       },
     },

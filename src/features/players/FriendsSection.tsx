@@ -19,6 +19,7 @@ import {
   TextField,
   useToast,
 } from '@/components/ui';
+import { VerifyEmailNotice } from '@/features/auth/VerifyEmailNotice';
 import { useAuth, useUid } from '@/hooks/useAuth';
 import { useGames } from '@/hooks/useGames';
 import { usePlayers } from '@/hooks/usePlayers';
@@ -41,6 +42,7 @@ type ErrorCode = 'invalid' | 'taken' | 'notFound' | 'self' | 'already' | 'needHa
 export function FriendsSection() {
   const { t } = useT();
   const { handle, friends, handles, loading } = useFriendsStore();
+  const needsVerification = useAuth().needsVerification;
   const [params, setParams] = useSearchParams();
   const [adding, setAdding] = useState<{ uid: string; handle: string } | null>(null);
   const [linking, setLinking] = useState<FriendDoc | null>(null);
@@ -53,7 +55,9 @@ export function FriendsSection() {
     <Panel title={t('friends.title')}>
       <div className={s.stack}>
         <p className={s.muted}>{t('friends.intro')}</p>
-        {loading ? (
+        {needsVerification ? (
+          <VerifyEmailNotice reason={t('friends.verifyFirst')} />
+        ) : loading ? (
           <Skeleton height={64} radius={0} />
         ) : (
           <>

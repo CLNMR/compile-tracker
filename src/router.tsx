@@ -22,6 +22,7 @@ const UiKitchenSink = lazy(() => import('@/features/dev/UiKitchenSink'));
 const LegalPage = lazy(() => import('@/features/legal/LegalPage'));
 const OffersPage = lazy(() => import('@/features/games/OffersPage'));
 const AddFriendPage = lazy(() => import('@/features/players/AddFriendPage'));
+const AuthActionPage = lazy(() => import('@/features/auth/AuthActionPage'));
 
 const page = (el: ReactNode) => <Suspense fallback={<Spinner />}>{el}</Suspense>;
 
@@ -57,6 +58,7 @@ export const router = createBrowserRouter([
       { path: 'games/new', element: page(<NewGamePage />) },
       { path: 'games/offers', element: page(<OffersPage />) },
       { path: 'add/:handle', element: page(<AddFriendPage />) },
+      { path: 'auth/action', element: page(<AuthActionPage />) },
       { path: 'games/:id', element: page(<GameDetailPage />) },
       { path: 'games/:id/edit', element: page(<NewGamePage />) },
       { path: 'stats', element: page(<StatsPage />) },

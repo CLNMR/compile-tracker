@@ -44,7 +44,7 @@ export function EmailAccountDialog({ open, onClose }: { open: boolean; onClose: 
     try {
       if (mode === 'create') {
         await createEmailAccount(email, password);
-        toast.push({ title: t('auth.linkedEmail.title'), description: t('auth.linkedEmail.description'), tone: 'win' });
+        toast.push({ title: t('auth.linkedEmail.title'), description: t('auth.linkedEmail.description', { email: email.trim() }), tone: 'win' });
       } else {
         await signInWithEmail(email, password);
         toast.push({ title: t('settings.account.email.signedIn'), tone: 'win' });

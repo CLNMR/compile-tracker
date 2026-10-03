@@ -10,6 +10,7 @@ import { usePlayers } from '@/hooks/usePlayers';
 import { useSettings } from '@/hooks/useSettings';
 import { isLocale, localeFromBrowser, useLocaleStore, useT } from '@/i18n';
 import type { SetId } from '@/types';
+import { VerifyEmailNotice } from '@/features/auth/VerifyEmailNotice';
 import { EmailAccountDialog } from './EmailAccountDialog';
 import s from './SettingsPage.module.css';
 
@@ -143,7 +144,7 @@ function LanguagePanel() {
 
 function AccountPanel() {
   const { t } = useT();
-  const { user, uid, isAnonymous, linkGoogle, switchToExistingGoogle, switchRequest, clearSwitchRequest, redirectNotice, clearRedirectNotice, signOut } =
+  const { user, uid, isAnonymous, needsVerification, linkGoogle, switchToExistingGoogle, switchRequest, clearSwitchRequest, redirectNotice, clearRedirectNotice, signOut } =
     useAuth();
   const toast = useToast();
   const [linking, setLinking] = useState(false);
@@ -235,6 +236,7 @@ function AccountPanel() {
             {accountEmail ? ` — ${accountEmail}` : ''}
           </TerminalLine>
         )}
+        {needsVerification ? <VerifyEmailNotice /> : null}
 
         <div className={s.row}>
           {isAnonymous ? (
