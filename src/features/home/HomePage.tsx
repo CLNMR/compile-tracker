@@ -26,6 +26,7 @@ import { firstPlayerAdvantage, playerRecords, protocolUsage, useStats } from '@/
 import { GameCard } from '@/features/games/GameCard';
 import { readStorage, writeStorage } from '@/features/games/gameUtils';
 import { useNow } from '@/features/games/useNow';
+import { OffersBanner } from '@/features/games/OffersBanner';
 import s from './HomePage.module.css';
 
 const HINT_KEY = 'compile.hint.linkAccount.dismissed';
@@ -85,6 +86,8 @@ export default function HomePage() {
         </div>
         <BinaryStrip length={40} seed={5} className={s.bits} />
       </header>
+
+      {!isAnonymous ? <OffersBanner /> : null}
 
       {showHint ? (
         <div className={s.hint} role="status">

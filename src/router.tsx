@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, type ReactNode } from 'react';
 import { createBrowserRouter, Outlet, useLocation } from 'react-router';
 import { AppShell, NAV_ITEMS, Spinner } from '@/components/ui';
 import { useAuthStore } from '@/store/authStore';
@@ -8,6 +8,7 @@ import { RequireAdmin } from '@/app/RequireAdmin';
 import { ConsentBanner } from '@/app/ConsentBanner';
 import { recordPageView } from '@/analytics';
 import { LegalLinks } from '@/features/legal/LegalLinks';
+import { usePendingOfferCount } from '@/hooks/useOffers';
 
 const HomePage = lazy(() => import('@/features/home/HomePage'));
 const PlayersPage = lazy(() => import('@/features/players/PlayersPage'));
@@ -19,6 +20,8 @@ const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'));
 const DevToolsPage = lazy(() => import('@/features/dev/DevToolsPage'));
 const UiKitchenSink = lazy(() => import('@/features/dev/UiKitchenSink'));
 const LegalPage = lazy(() => import('@/features/legal/LegalPage'));
+const OffersPage = lazy(() => import('@/features/games/OffersPage'));
+const AddFriendPage = lazy(() => import('@/features/players/AddFriendPage'));
 
 const page = (el: ReactNode) => <Suspense fallback={<Spinner />}>{el}</Suspense>;
 
@@ -28,8 +31,13 @@ function Layout() {
   const isAnonymous = useAuthStore((st) => st.isAnonymous);
   const { pathname } = useLocation();
   useEffect(() => recordPageView(pathname), [pathname]);
+  const pending = usePendingOfferCount();
+  const items = useMemo(
+    () => (isAnonymous ? GUEST_NAV_ITEMS : NAV_ITEMS.map((it) => (it.to === '/games' && pending > 0 ? { ...it, badge: pending } : it))),
+    [isAnonymous, pending],
+  );
   return (
-    <AppShell banner={<EmulatorBanner />} items={isAnonymous ? GUEST_NAV_ITEMS : NAV_ITEMS}>
+    <AppShell banner={<EmulatorBanner />} items={items}>
       <Outlet />
       <LegalLinks />
       <ConsentBanner />
@@ -47,6 +55,8 @@ export const router = createBrowserRouter([
       { path: 'players', element: page(<PlayersPage />) },
       { path: 'games', element: page(<GamesPage />) },
       { path: 'games/new', element: page(<NewGamePage />) },
+      { path: 'games/offers', element: page(<OffersPage />) },
+      { path: 'add/:handle', element: page(<AddFriendPage />) },
       { path: 'games/:id', element: page(<GameDetailPage />) },
       { path: 'games/:id/edit', element: page(<NewGamePage />) },
       { path: 'stats', element: page(<StatsPage />) },

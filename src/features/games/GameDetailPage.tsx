@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import type { GameDoc, SideKey } from '@/types';
 import { isKnownProtocol } from '@/data/protocols';
 import {
@@ -25,6 +25,9 @@ import { useGamesStore } from '@/store/gamesStore';
 import { useUid } from '@/hooks/useAuth';
 import { usePlayerLabel } from '@/hooks/usePlayers';
 import { deleteGame } from '@/repo/games';
+import { withdrawGameOffers } from '@/repo/offers';
+import { useFriendsStore } from '@/store/friendsStore';
+import { useOffersStore } from '@/store/offersStore';
 import { formatRelative, ownerPseudonym, sideLabel } from './gameUtils';
 import { useNow } from './useNow';
 import s from './GameDetailPage.module.css';
@@ -71,6 +74,8 @@ function GameDetail({ game }: { game: GameDoc }) {
   const [deleting, setDeleting] = useState(false);
 
   const isOwner = game.ownerUid === uid;
+  const offer = useOffersStore((st) => st.offers.get(game.id));
+  const sharedByHandle = useFriendsStore((st) => st.handles[game.ownerUid]);
   const playedAt = game.playedAt.toDate();
   const winnerName = sideLabel(game, game.winner, label);
   const firstName = game.firstPlayer ? sideLabel(game, game.firstPlayer, label) : null;
@@ -78,6 +83,8 @@ function GameDetail({ game }: { game: GameDoc }) {
   const onDelete = async () => {
     setDeleting(true);
     try {
+      const friends = useFriendsStore.getState().friends;
+      if (friends.length > 0) await withdrawGameOffers(uid, game.id, friends);
       await deleteGame(game.id);
       toast.push({ title: t('games.detail.toast.deleted'), tone: 'default' });
       navigate('/games', { replace: true });
@@ -131,7 +138,23 @@ function GameDetail({ game }: { game: GameDoc }) {
             </>
           ) : null}
           <dt>{t('games.detail.meta.recordedBy')}</dt>
-          <dd>{isOwner ? t('games.detail.meta.you') : <span className="mono">{ownerPseudonym(game.ownerUid)}</span>}</dd>
+          <dd>
+            {isOwner ? (
+              t('games.detail.meta.you')
+            ) : offer && sharedByHandle ? (
+              <span className="mono">@{sharedByHandle}</span>
+            ) : (
+              <span className="mono">{ownerPseudonym(game.ownerUid)}</span>
+            )}
+          </dd>
+          {offer && !isOwner ? (
+            <>
+              <dt>{t('friends.detail.offer')}</dt>
+              <dd>
+                <Link to="/games/offers">{t(`friends.detail.status.${offer.status}`)}</Link>
+              </dd>
+            </>
+          ) : null}
           <dt>{t('games.detail.meta.gameId')}</dt>
           <dd className="mono">{game.id}</dd>
         </dl>

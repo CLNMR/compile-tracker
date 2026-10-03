@@ -140,3 +140,26 @@ export const IconWarn = (p: IconProps) => (
     <path d="M12 10v4M12 17h.01" strokeWidth={2.5} />
   </svg>
 );
+
+export const IconQr = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="4" y="4" width="6" height="6" />
+    <rect x="14" y="4" width="6" height="6" />
+    <rect x="4" y="14" width="6" height="6" />
+    <path d="M14 14h2v2h-2zM18 14h2M14 18v2M18 18h2v2" />
+  </svg>
+);
+
+export const IconCamera = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
+    <circle cx="12" cy="13" r="3.5" />
+  </svg>
+);
+
+export const IconInbox = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 13 6.5 5h11L20 13v6H4z" />
+    <path d="M4 13h4.5l1 2h5l1-2H20" />
+  </svg>
+);

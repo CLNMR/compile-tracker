@@ -28,6 +28,9 @@ import { useSettings } from '@/hooks/useSettings';
 import { useGamesStore } from '@/store/gamesStore';
 import { recordGameSaved } from '@/analytics';
 import { createGame, InvalidGameError, updateGame } from '@/repo/games';
+import { syncGameOffers } from '@/repo/offers';
+import { useFriendsStore } from '@/store/friendsStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { PlayerDialog } from '@/features/players/PlayerDialog';
 import { fromDatetimeLocal, readJson, toDatetimeLocal, writeStorage } from './gameUtils';
 import s from './NewGamePage.module.css';
@@ -323,6 +326,16 @@ function Wizard({ game, guest, makeInitial }: WizardProps) {
       } else {
         savedId = await createGame(uid, input);
         recordGameSaved({ guest });
+      }
+      // Offer the game to friends linked to its players (and update/withdraw offers after an edit).
+      const friends = useFriendsStore.getState().friends;
+      if (!guest && friends.length > 0) {
+        try {
+          const offered = await syncGameOffers(uid, savedId, input, friends, useSettingsStore.getState().defaultPlayerId);
+          if (offered > 0 && !editing) toast.push({ title: t('friends.toast.gameOffered', { count: offered }) });
+        } catch (e) {
+          toast.push({ title: t('friends.toast.offerFailed'), description: (e as Error).message, tone: 'warn' });
+        }
       }
       toast.push({
         title: t('games.new.toast.compiled'),

@@ -7,7 +7,7 @@ import s from './LegalPage.module.css';
 type Kind = 'privacy' | 'imprint';
 
 const SECTIONS: Record<Kind, readonly string[]> = {
-  privacy: ['controller', 'overview', 'hosting', 'account', 'data', 'device', 'counters', 'cloudflare', 'ga', 'other', 'rights', 'changes'],
+  privacy: ['controller', 'overview', 'hosting', 'account', 'data', 'friends', 'device', 'counters', 'cloudflare', 'ga', 'other', 'rights', 'changes'],
   imprint: ['provider', 'project', 'liability'],
 };
 /** Sections followed by the operator's name, address and email. */

@@ -42,7 +42,7 @@ export function AppShell({ children, topRight, banner, items = NAV_ITEMS }: AppS
           {items.map((it) => (
             <li key={it.to}>
               <NavLink to={it.to} end={it.end} className={({ isActive }) => cx(s.railLink, isActive && s.active)}>
-                <span className={s.navIcon}>{createElement(it.icon, { size: 20 })}</span>
+                <NavIcon item={it} size={20} />
                 <span className={s.navLabel}>{labelOf(it)}</span>
               </NavLink>
             </li>
@@ -67,7 +67,7 @@ export function AppShell({ children, topRight, banner, items = NAV_ITEMS }: AppS
             return (
               <li key={it.to}>
                 <NavLink to={it.to} end={it.end} className={({ isActive }) => cx(s.tabLink, isActive && s.active)}>
-                  <span className={s.navIcon}>{createElement(it.icon, { size: 22 })}</span>
+                  <NavIcon item={it} size={22} />
                   <span className={s.tabLabel} data-long={label.length > 8 || undefined}>
                     {label}
                   </span>
@@ -78,5 +78,18 @@ export function AppShell({ children, topRight, banner, items = NAV_ITEMS }: AppS
         </ul>
       </nav>
     </div>
+  );
+}
+
+function NavIcon({ item, size }: { item: NavItem; size: number }) {
+  return (
+    <span className={s.navIcon}>
+      {createElement(item.icon, { size })}
+      {item.badge ? (
+        <span className={s.navBadge} aria-label={String(item.badge)}>
+          {item.badge > 99 ? '99+' : item.badge}
+        </span>
+      ) : null}
+    </span>
   );
 }

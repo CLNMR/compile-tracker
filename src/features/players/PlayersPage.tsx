@@ -26,6 +26,7 @@ import { useT } from '@/i18n';
 import { deletePlayer, setPlayerArchived } from '@/repo/players';
 import { playerRecords, recentForm, useStats, type PlayerRecordRow } from '@/stats';
 import { PlayerDialog } from './PlayerDialog';
+import { FriendsSection } from './FriendsSection';
 import s from './PlayersPage.module.css';
 
 type DialogState = { kind: 'closed' } | { kind: 'create' } | { kind: 'rename'; player: PlayerDoc } | { kind: 'delete'; player: PlayerDoc };
@@ -156,6 +157,8 @@ function Players() {
           ) : null}
         </>
       )}
+
+      <FriendsSection />
 
       <PlayerDialog open={dialog.kind === 'create'} onClose={close} />
       <PlayerDialog open={dialog.kind === 'rename'} onClose={close} player={dialog.kind === 'rename' ? dialog.player : undefined} />

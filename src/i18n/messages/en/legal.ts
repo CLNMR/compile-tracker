@@ -34,6 +34,10 @@ export const legal = {
       title: 'Games, players and settings',
       body: 'The app stores what you enter in Cloud Firestore (Google), in the Frankfurt region (europe-west3):\n• Games: protocols, which protocols were compiled, winner, first player, date.\n• Players: the names you give them, plus your settings (enabled sets, default player).\n\nPlayer names and settings are only visible to you. Games are visible to all users so the shared statistics can be computed, but without names: other users only see Alpha/Beta or a pseudonym such as "P-3F9A".\n\nLegal basis: Art. 6(1)(b) GDPR. The data is kept until you delete it in the app, or ask us to delete it.',
     },
+    friends: {
+      title: 'Handles, friends and shared games',
+      body: 'With a linked Google account you can pick a handle (e.g. "@ada") so friends can add you. Your handle is visible to other signed-in users who look it up; it is not linked to your name or email.\n\nWhen you add a friend, the app stores the friendship in both accounts, together with the player you linked the friend to (visible only to you). Games recorded with a linked player are offered to that friend: the offer stores which side of the game is them and whether they accepted it. Only you and that friend can see friendships and offers. Removing a friend deletes the friendship on both sides.\n\nLegal basis: Art. 6(1)(b) GDPR (the friends feature you choose to use).',
+    },
     device: {
       title: 'Storage on your device',
       body: 'The app stores the following on your device so that it works, also offline:\n• Your sign-in session and an offline copy of the data (IndexedDB).\n• Your language choice, your analytics choice and an unfinished game draft (local and session storage).\n• The app files, for offline use and installation (service worker cache).\n\nThis is strictly necessary for the service you requested (§ 25(2) no. 2 TDDDG), so no consent is needed. You can remove it at any time by clearing the site data in your browser. You will then lose access to anonymous data that is not linked to a Google account.',

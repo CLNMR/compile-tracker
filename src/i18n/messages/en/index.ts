@@ -2,6 +2,7 @@ import { app } from './app';
 import { auth } from './auth';
 import { common } from './common';
 import { dev } from './dev';
+import { friends } from './friends';
 import { games } from './games';
 import { home } from './home';
 import { legal } from './legal';
@@ -12,4 +13,4 @@ import { settings } from './settings';
 import { stats } from './stats';
 import { ui } from './ui';
 
-export const en = { common, app, auth, ui, protocol, home, players, games, stats, settings, privacy, legal, dev } as const;
+export const en = { common, app, auth, ui, protocol, home, players, friends, games, stats, settings, privacy, legal, dev } as const;

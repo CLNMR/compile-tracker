@@ -13,6 +13,8 @@ export interface NavItem {
   end?: boolean;
   /** Hidden while anonymous (needs named players / own data). */
   accountOnly?: boolean;
+  /** Small count on the icon (e.g. pending offers). */
+  badge?: number;
 }
 
 export const NAV_ITEMS: NavItem[] = [

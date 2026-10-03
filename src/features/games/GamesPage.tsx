@@ -21,6 +21,7 @@ import { usePlayers } from '@/hooks/usePlayers';
 import { useGamesStore } from '@/store/gamesStore';
 import { filterKey, useStats, type StatsFilter } from '@/stats';
 import { GameCard } from './GameCard';
+import { OffersBanner } from './OffersBanner';
 import { readStorage, writeStorage } from './gameUtils';
 import s from './GamesPage.module.css';
 
@@ -118,6 +119,8 @@ export default function GamesPage() {
       >
         {t('games.list.title')}
       </SectionHeader>
+
+      {!isAnonymous ? <OffersBanner /> : null}
 
       <div className={s.toolbar}>
         {!isAnonymous ? (

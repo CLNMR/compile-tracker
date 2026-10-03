@@ -1,0 +1,137 @@
+.stack {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.muted {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.handle {
+  font-family: var(--font-mono);
+  color: var(--accent-strong);
+  overflow-wrap: anywhere;
+}
+
+.handleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--accent-soft);
+  border: 1px solid var(--line-dim);
+}
+
+.handleId {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.handleRow .handle {
+  font-size: 1.125rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-2) var(--space-3);
+}
+
+.grow {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.formButtons {
+  display: flex;
+  gap: var(--space-2);
+  /* line the buttons up with the input, below the field label */
+  padding-top: 1.55rem;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.friend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-elev-2);
+  border: 1px solid var(--line-dim);
+  min-width: 0;
+}
+
+.friendId {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.qrWrap {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  text-align: center;
+}
+
+.qr {
+  width: min(260px, 70vw);
+  aspect-ratio: 1;
+  background: #fff;
+  padding: var(--space-2);
+}
+
+.qr svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.qrHandle {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  color: var(--accent-strong);
+}
+
+.scanWrap {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.video {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: #000;
+  border: 1px solid var(--line-dim);
+}
