@@ -7,6 +7,7 @@ import { EmulatorBanner } from '@/features/dev/EmulatorBanner';
 import { RequireAdmin } from '@/app/RequireAdmin';
 import { ConsentBanner } from '@/app/ConsentBanner';
 import { recordPageView } from '@/analytics';
+import { LegalLinks } from '@/features/legal/LegalLinks';
 
 const HomePage = lazy(() => import('@/features/home/HomePage'));
 const PlayersPage = lazy(() => import('@/features/players/PlayersPage'));
@@ -17,6 +18,7 @@ const StatsPage = lazy(() => import('@/features/stats/StatsPage'));
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'));
 const DevToolsPage = lazy(() => import('@/features/dev/DevToolsPage'));
 const UiKitchenSink = lazy(() => import('@/features/dev/UiKitchenSink'));
+const LegalPage = lazy(() => import('@/features/legal/LegalPage'));
 
 const page = (el: ReactNode) => <Suspense fallback={<Spinner />}>{el}</Suspense>;
 
@@ -29,6 +31,7 @@ function Layout() {
   return (
     <AppShell banner={<EmulatorBanner />} items={isAnonymous ? GUEST_NAV_ITEMS : NAV_ITEMS}>
       <Outlet />
+      <LegalLinks />
       <ConsentBanner />
     </AppShell>
   );
@@ -48,6 +51,10 @@ export const router = createBrowserRouter([
       { path: 'games/:id/edit', element: page(<NewGamePage />) },
       { path: 'stats', element: page(<StatsPage />) },
       { path: 'settings', element: page(<SettingsPage />) },
+      { path: 'privacy', element: page(<LegalPage kind="privacy" />) },
+      { path: 'datenschutz', element: page(<LegalPage kind="privacy" />) },
+      { path: 'imprint', element: page(<LegalPage kind="imprint" />) },
+      { path: 'impressum', element: page(<LegalPage kind="imprint" />) },
       { path: 'dev', element: <RequireAdmin>{page(<DevToolsPage />)}</RequireAdmin> },
       { path: 'dev/ui', element: <RequireAdmin>{page(<UiKitchenSink />)}</RequireAdmin> },
     ],

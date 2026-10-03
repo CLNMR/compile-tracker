@@ -37,6 +37,10 @@
   color: var(--text-muted);
 }
 
+.body a {
+  color: var(--accent-strong);
+}
+
 .actions {
   display: grid;
   grid-template-columns: 1fr 1fr;

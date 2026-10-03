@@ -59,9 +59,14 @@ Three layers, all in `src/analytics/`:
 
 1. **Firestore counters** (always on, cookie-free): `analytics/{day}/counters/{kind}_{source}` = `{ day, n }` for `visit`, `newUser`, `game` and `link` (Google linked) per source and UTC day. No uid or device id is stored; rules only allow `+1` on whitelisted ids, and only admins can read them. Admin visits are not counted, nor is `vite dev` against the live project.
 2. **Cloudflare Web Analytics** (cookie-free page views, referrers, countries): set `VITE_CF_BEACON_TOKEN`. It does not record query strings, so it cannot see utm tags.
-3. **Google Analytics 4** via Firebase: set `VITE_FB_MEASUREMENT_ID`. Loaded only after consent (banner, revocable in **Settings → Privacy**). Page views are sent manually; the first one carries the landing URL with its utm tags. In the GA web stream, turn off *Enhanced measurement → Page changes based on browser history events* to avoid double page views.
+3. **Google Analytics 4** via Firebase: set `VITE_FB_MEASUREMENT_ID`. Loaded only after consent (banner, revocable in **Settings → Privacy**). Page views are sent manually; the first one carries the landing URL with its utm tags. Turn off GA's own SPA page views to avoid doubles: GA → Admin → Data collection and modification → Data streams → the web stream → Enhanced measurement (gear icon) → Page views → *Show advanced settings* → uncheck *Page changes based on browser history events* → Save. Check: `curl -s 'https://www.googletagmanager.com/gtag/js?id=<G-ID>' | grep -o '"vtp_enableHistoryEvents":[a-z]*'` should print `false`.
 
 The source is taken from `utm_source` → installed app → referrer → `direct` (`src/analytics/source.ts`). The installed app starts at `/?utm_source=pwa&utm_medium=homescreen` (manifest `id` stays `/`). The admin **Developer tools → Analytics** panel shows the counters, activity derived from the games, tagged links to copy and links to the dashboards.
+
+## Domains and legal pages
+
+- Main URL: `VITE_CANONICAL_ORIGIN` (https://compile.randomapps.net), also used as `VITE_FB_AUTH_DOMAIN`. Browser visits on `*.web.app` / `*.firebaseapp.com` are redirected there by an inline script in `index.html`; installed apps on the old domain keep working (their data lives in that origin's storage).
+- `/privacy` (`/datenschutz`) and `/imprint` (`/impressum`), linked under every page, in Settings and in the consent banner. Texts in `src/i18n/messages/{en,de}/legal.ts`; operator name, address and email come from `VITE_LEGAL_*` (kept out of git). Bump `LEGAL_UPDATED` in `src/features/legal/operator.ts` when the texts change.
 
 ## Known limitations
 

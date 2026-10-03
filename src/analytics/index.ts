@@ -19,10 +19,22 @@ export { SOURCES, type Source } from './source';
 const env = import.meta.env;
 const MEASUREMENT_ID = (env.VITE_FB_MEASUREMENT_ID as string | undefined)?.trim() || '';
 const CF_TOKEN = (env.VITE_CF_BEACON_TOKEN as string | undefined)?.trim() || '';
+/** Main public origin, e.g. https://compile.randomapps.net (falls back to the current origin). */
+export const CANONICAL_ORIGIN = ((env.VITE_CANONICAL_ORIGIN as string | undefined)?.trim() || (typeof location !== 'undefined' ? location.origin : '')).replace(/\/$/, '');
+const CANONICAL_HOST = (() => {
+  try {
+    return new URL(CANONICAL_ORIGIN).hostname;
+  } catch {
+    return '';
+  }
+})();
+const PROJECT_ID = String(env.VITE_FB_PROJECT_ID ?? '');
+const OWN_HOSTS = [CANONICAL_HOST, `${PROJECT_ID}.web.app`, `${PROJECT_ID}.firebaseapp.com`, typeof location !== 'undefined' ? location.hostname : ''].filter(Boolean);
 
 /** Google Analytics is wired up in this build (production with a measurement id). The banner only shows then. */
 export const GA_CONFIGURED = env.PROD && !useEmulators && !!MEASUREMENT_ID;
-export const CF_CONFIGURED = env.PROD && !useEmulators && !!CF_TOKEN;
+/** The Cloudflare site is registered for the main domain only, so the beacon runs only there. */
+export const CF_CONFIGURED = env.PROD && !useEmulators && !!CF_TOKEN && (typeof location === 'undefined' || location.hostname === CANONICAL_HOST);
 /** Counters are written in production and against the emulators, never from `vite dev` on the live project. */
 const COUNTERS_ENABLED = env.PROD || useEmulators;
 
@@ -34,7 +46,7 @@ const isStandalone = () =>
 const landing = {
   href: typeof location !== 'undefined' ? location.href : '',
   source: (typeof location !== 'undefined'
-    ? detectSource({ search: location.search, referrer: document.referrer, standalone: isStandalone(), ownHost: location.hostname })
+    ? detectSource({ search: location.search, referrer: document.referrer, standalone: isStandalone(), ownHosts: OWN_HOSTS })
     : 'direct') as Source,
 };
 

@@ -1,0 +1,50 @@
+.page {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+  max-width: 760px;
+}
+
+.head {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.body {
+  display: grid;
+  gap: var(--space-3);
+  color: var(--text-muted);
+  font-size: 14.5px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.body p,
+.body ul {
+  margin: 0;
+}
+
+.body ul {
+  display: grid;
+  gap: var(--space-1);
+  padding-left: 1.2em;
+}
+
+.body li::marker {
+  color: var(--accent);
+}
+
+.operator {
+  display: grid;
+  gap: 2px;
+  font-style: normal;
+  color: var(--text);
+  padding: var(--space-3);
+  background: var(--bg);
+  border: 1px solid var(--line-dim);
+  border-left: 2px solid var(--accent);
+}
+
+.body a {
+  color: var(--accent-strong);
+}

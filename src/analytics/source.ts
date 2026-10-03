@@ -25,12 +25,12 @@ export interface SourceInput {
   referrer: string;
   /** Launched as installed app. */
   standalone: boolean;
-  /** Our own host, so internal referrers count as direct. */
-  ownHost: string;
+  /** Our own hosts (main domain and the Firebase default domains), so internal referrers count as direct. */
+  ownHosts: readonly string[];
 }
 
 /** Order: explicit `utm_source` tag → installed app → referrer host → direct. */
-export function detectSource({ search, referrer, standalone, ownHost }: SourceInput): Source {
+export function detectSource({ search, referrer, standalone, ownHosts }: SourceInput): Source {
   const utm = new URLSearchParams(search).get('utm_source')?.trim().toLowerCase();
   if (utm) return UTM_ALIASES[utm] ?? 'other';
   if (standalone) return 'pwa';
@@ -40,7 +40,7 @@ export function detectSource({ search, referrer, standalone, ownHost }: SourceIn
   } catch {
     host = '';
   }
-  if (!host || host === ownHost) return 'direct';
+  if (!host || ownHosts.includes(host)) return 'direct';
   for (const [re, source] of REFERRERS) if (re.test(host)) return source;
   return 'other';
 }

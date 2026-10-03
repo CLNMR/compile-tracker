@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { CF_CONFIGURED, GA_CONFIGURED, SOURCES, useConsentStore, type Source } from '@/analytics';
+import { CANONICAL_ORIGIN, CF_CONFIGURED, GA_CONFIGURED, SOURCES, useConsentStore, type Source } from '@/analytics';
 import { Button, Panel, SegmentedControl, StatTile, TerminalLine, useToast } from '@/components/ui';
 import { useGames } from '@/hooks/useGames';
 import { useT } from '@/i18n';
@@ -92,7 +92,7 @@ export function AnalyticsPanel() {
     { key: 'perVisit', label: t('dev.analytics.col.perVisit'), width: 'minmax(90px, 1fr)', align: 'right' },
   ];
 
-  const tagged = (src: Source, medium: string) => `${location.origin}/?utm_source=${src}&utm_medium=${medium}&utm_campaign=launch`;
+  const tagged = (src: Source, medium: string) => `${CANONICAL_ORIGIN}/?utm_source=${src}&utm_medium=${medium}&utm_campaign=launch`;
   const copy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);

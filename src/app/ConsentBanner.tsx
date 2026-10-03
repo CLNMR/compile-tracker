@@ -1,4 +1,5 @@
 import { GA_CONFIGURED, useConsentStore } from '@/analytics';
+import { Link } from 'react-router';
 import { Button } from '@/components/ui';
 import { useT } from '@/i18n';
 import styles from './ConsentBanner.module.css';
@@ -17,7 +18,9 @@ export function ConsentBanner() {
       <h2 id="consent-title" className={styles.title}>
         {t('privacy.banner.title')}
       </h2>
-      <p className={styles.body}>{t('privacy.banner.body')}</p>
+      <p className={styles.body}>
+        {t('privacy.banner.body')} <Link to="/privacy">{t('legal.links.privacy')}</Link>
+      </p>
       <div className={styles.actions}>
         <Button size="sm" variant="ghost" onClick={deny}>
           {t('privacy.banner.decline')}

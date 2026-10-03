@@ -343,6 +343,11 @@ function PrivacyPanel() {
           </>
         ) : null}
         <p className={s.about}>{t('privacy.settings.cookieFree')}</p>
+        <div>
+          <Button variant="subtle" size="sm" to="/privacy">
+            {t('legal.links.privacy')}
+          </Button>
+        </div>
       </div>
     </Panel>
   );
@@ -399,6 +404,14 @@ function AboutPanel() {
       <div className={s.stack}>
         <TerminalLine tone="muted">{t('settings.about.version', { version: APP_VERSION })}</TerminalLine>
         <p className={s.about}>{t('settings.about.attribution')}</p>
+        <div className={s.row}>
+          <Button variant="subtle" size="sm" to="/privacy">
+            {t('legal.links.privacy')}
+          </Button>
+          <Button variant="subtle" size="sm" to="/imprint">
+            {t('legal.links.imprint')}
+          </Button>
+        </div>
       </div>
     </Panel>
   );

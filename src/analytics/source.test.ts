@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { detectSource } from './source';
 
-const base = { search: '', referrer: '', standalone: false, ownHost: 'compile-tracker-cln.web.app' };
+const base = { search: '', referrer: '', standalone: false, ownHosts: ['compile.randomapps.net', 'compile-tracker-cln.web.app'] };
 
 describe('detectSource', () => {
   it('prefers the utm_source tag', () => {
@@ -27,6 +27,7 @@ describe('detectSource', () => {
   it('treats missing, own or garbage referrers as direct', () => {
     expect(detectSource(base)).toBe('direct');
     expect(detectSource({ ...base, referrer: 'https://compile-tracker-cln.web.app/stats' })).toBe('direct');
+    expect(detectSource({ ...base, referrer: 'https://compile.randomapps.net/' })).toBe('direct');
     expect(detectSource({ ...base, referrer: 'not a url' })).toBe('direct');
   });
 });

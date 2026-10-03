@@ -12,6 +12,17 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>Compile Tracker</title>
+    <script>
+      // Browser visits on the Firebase default domains move to the main domain (same path, query and hash).
+      // Installed apps keep running where they were installed; their data lives in that origin's storage.
+      (function () {
+        var target = '%VITE_CANONICAL_ORIGIN%';
+        var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+        if (/^https:\/\//.test(target) && /\.(web\.app|firebaseapp\.com)$/.test(location.hostname) && !standalone) {
+          location.replace(target + location.pathname + location.search + location.hash);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
