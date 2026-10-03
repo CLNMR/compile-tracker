@@ -2,7 +2,9 @@
 //   1) firebase emulators:start --only auth,firestore
 //   2) npm run dev:emu
 //   3) node e2e/email.mjs [outDir]
-// A guest creates an email account (keeping its uid), signs out, signs back in, and hits the error paths.
+// A guest creates an email account (keeping its uid), confirms the address through /auth/action,
+// signs out, hits the error paths, resets the password through /auth/action and signs back in.
+// Email links come from the Auth emulator's oobCodes endpoint instead of a mailbox.
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 
@@ -10,6 +12,15 @@ const BASE = process.env.BASE_URL ?? 'http://localhost:5173';
 const RUN = Date.now().toString(36);
 const EMAIL = `carol-${RUN}@example.com`;
 const PASSWORD = 'compile-123';
+const NEW_PASSWORD = 'compile-456';
+const PROJECT = process.env.PROJECT_ID ?? 'compile-tracker-cln';
+
+/** Latest out-of-band code the Auth emulator "sent" to EMAIL. */
+async function oobCode(requestType) {
+  const res = await fetch(`http://127.0.0.1:9099/emulator/v1/projects/${PROJECT}/oobCodes`);
+  const { oobCodes = [] } = await res.json();
+  return oobCodes.filter((c) => c.email === EMAIL && c.requestType === requestType).at(-1)?.oobCode ?? null;
+}
 const OUT = process.argv[2] ?? 'e2e/out-email';
 mkdirSync(OUT, { recursive: true });
 
@@ -78,10 +89,35 @@ try {
   check((await uid()) === guestUid, 'uid kept (guest data moves into the account)');
   await shot('02-created');
 
-  step('friends section is available');
+  check(await seen(page.getByText(`email not confirmed yet — we sent a link to ${EMAIL}.`)), 'Settings asks to confirm the email');
+
+  step('friends wait for the confirmation');
   await page.goto(`${BASE}/players`, { waitUntil: 'domcontentloaded' });
-  check(await seen(page.getByLabel('Your handle')), 'handle field on Players page');
+  check(await seen(page.getByText(/confirm your email address to pick a handle/i)), 'Players page asks to confirm first');
+  check((await page.getByLabel('Your handle').count()) === 0, 'no handle field before confirming');
+  await page.getByRole('button', { name: /i confirmed it/i }).click();
+  check(await seen(page.getByText('Not confirmed yet')), 'early re-check says not yet');
+  await page.getByRole('button', { name: /resend email/i }).click();
+  check(await seen(page.getByText('Confirmation email sent')), 'resend works');
+  await shot('03-verify-pending');
+
+  step('confirm through /auth/action');
+  const verifyCode = await oobCode('VERIFY_EMAIL');
+  check(!!verifyCode, 'emulator has a verification code');
+  await page.goto(`${BASE}/auth/action?mode=verifyEmail&oobCode=${verifyCode}&continueUrl=${encodeURIComponent(`${BASE}/players`)}`, { waitUntil: 'domcontentloaded' });
+  check(await seen(page.getByText('email confirmed.')), 'action page confirms');
+  await shot('04-verified');
+  await page.getByRole('link', { name: /^continue$/i }).click();
+  check(await seen(page.getByLabel('Your handle')), 'handle field after confirming');
   check((await page.getByLabel('Your handle').inputValue()).startsWith('carol'), 'handle suggested from the email');
+  const handle = `carol_${RUN}`.slice(0, 20);
+  await page.getByLabel('Your handle').fill(handle);
+  await page.getByRole('button', { name: /^claim$/i }).click();
+  check(await seen(page.getByText(`@${handle}`, { exact: true })), 'confirmed account can claim a handle (rules)');
+
+  step('used link');
+  await page.goto(`${BASE}/auth/action?mode=verifyEmail&oobCode=${verifyCode}`, { waitUntil: 'domcontentloaded' });
+  check(await seen(page.getByText(/expired or was already used/i)), 'reused link explained');
 
   step('sign out, then the errors');
   await page.goto(`${BASE}/settings`, { waitUntil: 'domcontentloaded' });
@@ -98,15 +134,28 @@ try {
   check(await seen(dialog().getByText('Wrong email or password.')), 'wrong password explained');
   await dialog().getByRole('button', { name: /forgot password/i }).click();
   check(await seen(page.getByText('Reset email sent')), 'reset email toast');
-  await shot('03-errors');
+  await shot('05-errors');
 
-  step('sign back in');
-  await fill(EMAIL, PASSWORD);
-  await dialog().getByRole('button', { name: /^sign in$/i }).last().click();
-  check(await seen(page.getByText(`identity: email — ${EMAIL}`)), 'signed in again');
+  step('reset the password through /auth/action and sign back in');
+  const resetCode = await oobCode('PASSWORD_RESET');
+  check(!!resetCode, 'emulator has a reset code');
+  await page.goto(`${BASE}/auth/action?mode=resetPassword&oobCode=${resetCode}`, { waitUntil: 'domcontentloaded' });
+  check(await seen(page.getByText(`new password for ${EMAIL}`)), 'reset page names the account');
+  await page.locator('input[type=password]').fill('123');
+  await page.getByRole('button', { name: /save password/i }).click();
+  check(await seen(page.getByText(/at least 6 characters/i)), 'short new password rejected');
+  await page.locator('input[type=password]').fill(NEW_PASSWORD);
+  await shot('06-reset');
+  await page.getByRole('button', { name: /save password/i }).click();
+  check(await seen(page.getByText('password changed.')), 'password changed');
+  await page.getByRole('button', { name: `Sign in as ${EMAIL}` }).click();
+  check(await seen(page.getByText('Signed in')), 'signed in with the new password');
+  await page.goto(`${BASE}/settings`, { waitUntil: 'domcontentloaded' });
+  check(await seen(page.getByText(`identity: email — ${EMAIL}`)), 'Settings shows the account');
+  check((await page.getByText(/email not confirmed yet/i).count()) === 0, 'still confirmed');
   await page.waitForTimeout(500);
   check((await uid()) === guestUid, 'same uid as before');
-  await shot('04-signed-in');
+  await shot('07-signed-in');
 
   step('German labels');
   await page.goto(`${BASE}/settings`, { waitUntil: 'domcontentloaded' });
