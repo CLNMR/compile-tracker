@@ -232,6 +232,8 @@ describe('analytics counters', () => {
 const CAROL = 'carol-uid';
 /** A Google-linked (non-anonymous) user. */
 const realAs = (uid: string) => env.authenticatedContext(uid, { firebase: { sign_in_provider: 'google.com' } }).firestore();
+/** An email/password account. */
+const emailAs = (uid: string) => env.authenticatedContext(uid, { firebase: { sign_in_provider: 'password' } }).firestore();
 const anonAs = (uid: string) => env.authenticatedContext(uid, { firebase: { sign_in_provider: 'anonymous' } }).firestore();
 
 function claim(db: Firestore, uid: string, handle: string, previous?: string) {
@@ -264,6 +266,13 @@ describe('handles and profiles', () => {
     await assertFails(claim(anonAs(BOB), BOB, 'bob'));
     await assertSucceeds(getDoc(doc(dbAs(BOB), 'handles', 'alice')));
     await assertSucceeds(getDoc(doc(dbAs(BOB), 'profiles', ALICE)));
+  });
+
+  it('email/password accounts count as real accounts', async () => {
+    await assertSucceeds(claim(emailAs(CAROL), CAROL, 'carol'));
+    await claim(realAs(ALICE), ALICE, 'alice');
+    const db = emailAs(CAROL);
+    await assertSucceeds(befriend(db, CAROL, ALICE));
   });
 
   it('handles are unique, well-formed and must match the profile', async () => {
