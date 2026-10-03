@@ -53,6 +53,15 @@ Adding a string: put the English text in `src/i18n/messages/en/<namespace>.ts`, 
 - In the **All** scope other users' players appear as `P-XXXX` (first 4 chars of the opaque player id).
 - Test data is flagged `isTestData: true`; anyone signed in may purge it. Real games can only be deleted by their owner (or an admin).
 
+## Friends and shared games
+
+Google-linked accounts only (rules check `sign_in_provider != 'anonymous'`).
+
+- **Handles**: `handles/{handle} = { uid }` (unique by doc id) and `profiles/{uid} = { handle }`, written together in one batch. QR codes encode `/add/<handle>`, which opens the Players page with the handle looked up.
+- **Friends**: `users/{uid}/friends/{friendUid} = { since, playerId? }`. Adding writes my doc and the mirror doc in the friend's account in one batch (the mirror may only carry `since`). `playerId` links the friend to one of my players.
+- **Offers**: `users/{recipient}/offers/{gameId} = { ownerUid, friendSide, ownerSide?, status, offeredAt }`. Saving a game (and linking a friend to a player) offers every game with that player; the owner writes the sides, only the recipient sets `status`. Games themselves are unchanged and carry no uids beyond `ownerUid`.
+- **Mine scope**: my games plus accepted offers, remapped by `src/stats/perspective.ts` (my side → my "me" player, the owner's side → my player linked to them or `friend:<uid>`). This also means a game played between two users is stored once, not twice.
+
 ## Analytics
 
 Three layers, all in `src/analytics/`:
@@ -70,5 +79,6 @@ The source is taken from `utm_source` → installed app → referrer → `direct
 
 ## Known limitations
 
-- Games are always between two players of one account; two tracker users playing each other would each record their own copy.
+- If two friends both record the same game, both copies exist; the recipient can decline the offered one.
+- Deleting a game removes it for friends who accepted it too (it is the same document).
 - Google linking fails with `credential-already-in-use` if that Google account already has data — the UI offers to switch; the anonymous data stays under the old uid.
