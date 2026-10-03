@@ -8,6 +8,9 @@ service cloud.firestore {
     // Admin uids — keep in sync with VITE_ADMIN_UIDS. Changing this requires `npm run deploy:rules`.
     function isAdmin() { return signedIn() && request.auth.uid in ['lZnbYJhKdjQi6CDr3m23v2mmSGF2']; }
 
+    // Google-linked (non-anonymous) account: required for handles, friends and offers.
+    function realAccount() { return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous'; }
+
     function validSide(s) {
       return s.keys().hasOnly(['playerId', 'protocols', 'compiled'])
         && s.playerId is string && s.playerId.size() >= 1 && s.playerId.size() <= 64
@@ -53,6 +56,94 @@ service cloud.firestore {
           && request.resource.data.name.size() >= 1
           && request.resource.data.name.size() <= 40;
       }
+
+      // Mutual friendship: each account holds users/{me}/friends/{them}. The adder writes both docs in one batch;
+      // the mirror doc in the other account may only carry `since`. Either side may delete either doc.
+      match /friends/{fid} {
+        allow read: if signedIn() && request.auth.uid == uid;
+        allow create: if realAccount() && fid != uid
+          && request.resource.data.since == request.time
+          && (
+            (request.auth.uid == uid
+              && request.resource.data.keys().hasOnly(['since', 'playerId'])
+              && (!('playerId' in request.resource.data) || validPlayerRef(request.resource.data.playerId))
+              && exists(/databases/$(db)/documents/profiles/$(fid)))
+            || (request.auth.uid == fid
+              && request.resource.data.keys().hasOnly(['since'])
+              && exists(/databases/$(db)/documents/profiles/$(uid))
+              && existsAfter(/databases/$(db)/documents/users/$(fid)/friends/$(uid)))
+          );
+        allow update: if realAccount()
+          && request.resource.data.keys().hasOnly(['since', 'playerId'])
+          && (
+            (request.auth.uid == uid
+              && request.resource.data.since == resource.data.since
+              && (!('playerId' in request.resource.data) || validPlayerRef(request.resource.data.playerId)))
+            // re-adding: the other side refreshes `since` on the mirror doc, keeping any player link
+            || (request.auth.uid == fid
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['since'])
+              && request.resource.data.since == request.time
+              && existsAfter(/databases/$(db)/documents/users/$(fid)/friends/$(uid)))
+          );
+        allow delete: if signedIn() && (request.auth.uid == uid || request.auth.uid == fid);
+      }
+
+      // Games another account offers to {uid}: the owner writes the side fields while they are friends,
+      // only {uid} decides (`status`). Doc id = game id.
+      match /offers/{gid} {
+        allow get: if signedIn()
+          && (request.auth.uid == uid || resource == null || resource.data.ownerUid == request.auth.uid);
+        allow list: if signedIn() && (request.auth.uid == uid || resource.data.ownerUid == request.auth.uid);
+        allow create: if realAccount() && request.auth.uid != uid
+          && validOffer(request.resource.data)
+          && request.resource.data.ownerUid == request.auth.uid
+          && request.resource.data.status == 'pending'
+          && exists(/databases/$(db)/documents/users/$(uid)/friends/$(request.auth.uid));
+        allow update: if realAccount() && validOffer(request.resource.data)
+          && request.resource.data.ownerUid == resource.data.ownerUid
+          && (
+            (request.auth.uid == resource.data.ownerUid
+              && request.resource.data.status == resource.data.status
+              && exists(/databases/$(db)/documents/users/$(uid)/friends/$(request.auth.uid)))
+            || (request.auth.uid == uid
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
+          );
+        allow delete: if signedIn() && (request.auth.uid == uid || resource.data.ownerUid == request.auth.uid);
+      }
+    }
+
+    function validPlayerRef(p) { return p is string && p.size() >= 1 && p.size() <= 64; }
+
+    function validOffer(d) {
+      return d.keys().hasOnly(['ownerUid', 'friendSide', 'ownerSide', 'status', 'offeredAt'])
+        && d.ownerUid is string
+        && d.friendSide in ['p1', 'p2']
+        && (!('ownerSide' in d) || (d.ownerSide in ['p1', 'p2'] && d.ownerSide != d.friendSide))
+        && d.status in ['pending', 'accepted', 'declined']
+        && d.offeredAt is timestamp;
+    }
+
+    // Public handles of real accounts. handles/{handle} = { uid } makes them unique; profiles/{uid} = { handle }.
+    // Both are written together in one batch (claim / change) and must point at each other.
+    function validHandle(h) { return h is string && h.matches('^[a-z0-9_]{3,20}$'); }
+
+    match /handles/{h} {
+      allow get: if signedIn();
+      allow create: if realAccount() && validHandle(h)
+        && request.resource.data.keys().hasOnly(['uid'])
+        && request.resource.data.uid == request.auth.uid
+        && getAfter(/databases/$(db)/documents/profiles/$(request.auth.uid)).data.handle == h;
+      allow delete: if realAccount() && resource.data.uid == request.auth.uid
+        && (!existsAfter(/databases/$(db)/documents/profiles/$(request.auth.uid))
+            || getAfter(/databases/$(db)/documents/profiles/$(request.auth.uid)).data.handle != h);
+    }
+
+    match /profiles/{pid} {
+      allow get: if signedIn();
+      allow create, update: if realAccount() && request.auth.uid == pid
+        && request.resource.data.keys().hasOnly(['handle'])
+        && validHandle(request.resource.data.handle)
+        && getAfter(/databases/$(db)/documents/handles/$(request.resource.data.handle)).data.uid == pid;
     }
 
     match /games/{gid} {

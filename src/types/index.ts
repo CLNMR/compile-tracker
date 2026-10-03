@@ -52,7 +52,51 @@ export interface Game {
   /** serverTimestamp(); audit only. */
   createdAt: Timestamp;
 }
-export type GameDoc = Game & { id: string };
+export type GameDoc = Game & {
+  id: string;
+  /** Set on games another account recorded and offered to me, after I accepted them (remapped to my players). */
+  sharedBy?: string;
+};
+
+/** profiles/{uid} — public handle of a non-anonymous account. */
+export interface Profile {
+  handle: string;
+}
+
+/** users/{uid}/friends/{friendUid} — mutual: both accounts hold a doc for each other. */
+export interface Friend {
+  since: Timestamp;
+  /** My player that stands for this friend; games with this player are offered to them. */
+  playerId?: string;
+}
+export type FriendDoc = Friend & { uid: string };
+
+export type OfferStatus = 'pending' | 'accepted' | 'declined';
+
+/** users/{recipientUid}/offers/{gameId} — a game the owner recorded with a player linked to the recipient. */
+export interface Offer {
+  ownerUid: string;
+  /** The side that is the recipient. */
+  friendSide: SideKey;
+  /** The side that is the owner themselves (their "me" player), if they played. */
+  ownerSide?: SideKey;
+  status: OfferStatus;
+  offeredAt: Timestamp;
+}
+export type OfferDoc = Offer & { gameId: string };
+
+/** Handles: 3–20 chars, lowercase letters, digits, underscore. Keep in sync with firestore.rules. */
+export const HANDLE_RE = /^[a-z0-9_]{3,20}$/;
+
+export function normalizeHandle(raw: string): string {
+  return raw.trim().replace(/^@/, '').toLowerCase();
+}
+
+/** Synthetic player id for a friend account that I have not linked to one of my players. */
+export const FRIEND_PLAYER_PREFIX = 'friend:';
+export const friendPlayerId = (uid: string): string => `${FRIEND_PLAYER_PREFIX}${uid}`;
+export const friendUidOf = (playerId: string): string | null =>
+  playerId.startsWith(FRIEND_PLAYER_PREFIX) ? playerId.slice(FRIEND_PLAYER_PREFIX.length) : null;
 
 /** What the UI hands to the repo when creating/updating a game. */
 export interface GameInput {

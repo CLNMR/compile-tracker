@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useGamesStore } from '@/store/gamesStore';
+import { useScopedSource } from '@/hooks/useGames';
 import type { GameDoc } from '@/types';
 import { aggregate, type Agg } from './aggregate';
 import { filterGames, filterKey, type StatsFilter } from './filters';
@@ -39,7 +40,8 @@ export function computeStats(all: GameDoc[], filter: StatsFilter): StatsEntry {
 }
 
 export function useStats(filter: StatsFilter): StatsResult {
-  const all = useGamesStore((s) => s.games);
+  // 'mine' starts from my games plus accepted offers (remapped); 'all' from every game as stored.
+  const all = useScopedSource(filter.scope, filter.myUid);
   const loading = useGamesStore((s) => s.loading);
   const fromCache = useGamesStore((s) => s.fromCache);
   const key = filterKey(filter);

@@ -5,7 +5,7 @@ import {
   type QueryDocumentSnapshot,
   type SnapshotOptions,
 } from 'firebase/firestore';
-import type { Game, GameDoc, GameSide, Player, PlayerDoc, UserDoc } from '@/types';
+import type { FriendDoc, Game, GameDoc, GameSide, OfferDoc, Player, PlayerDoc, Profile, UserDoc } from '@/types';
 import { DEFAULT_ENABLED_SETS } from '@/data/sets';
 
 const snapshotOptions: SnapshotOptions = { serverTimestamps: 'estimate' };
@@ -73,5 +73,47 @@ export const userConverter: FirestoreDataConverter<UserDoc, DocumentData> = {
       enabledSets: Array.isArray(d.enabledSets) && d.enabledSets.length ? d.enabledSets : [...DEFAULT_ENABLED_SETS],
       defaultPlayerId: typeof d.defaultPlayerId === 'string' ? d.defaultPlayerId : undefined,
     };
+  },
+};
+
+export const profileConverter: FirestoreDataConverter<Profile, DocumentData> = {
+  toFirestore(p: Profile): DocumentData {
+    return { handle: p.handle };
+  },
+  fromFirestore(snap: QueryDocumentSnapshot, options?: SnapshotOptions): Profile {
+    const d = snap.data(options ?? snapshotOptions) as Partial<Profile>;
+    return { handle: String(d.handle ?? '') };
+  },
+};
+
+export const friendConverter: FirestoreDataConverter<FriendDoc, DocumentData> = {
+  toFirestore(f: FriendDoc): DocumentData {
+    const { uid: _uid, ...rest } = f;
+    return rest;
+  },
+  fromFirestore(snap: QueryDocumentSnapshot, options?: SnapshotOptions): FriendDoc {
+    const d = snap.data(options ?? snapshotOptions) as Record<string, unknown>;
+    const friend: FriendDoc = { uid: snap.id, since: d.since instanceof Timestamp ? d.since : Timestamp.now() };
+    if (typeof d.playerId === 'string' && d.playerId) friend.playerId = d.playerId;
+    return friend;
+  },
+};
+
+export const offerConverter: FirestoreDataConverter<OfferDoc, DocumentData> = {
+  toFirestore(o: OfferDoc): DocumentData {
+    const { gameId: _id, ...rest } = o;
+    return rest;
+  },
+  fromFirestore(snap: QueryDocumentSnapshot, options?: SnapshotOptions): OfferDoc {
+    const d = snap.data(options ?? snapshotOptions) as Record<string, unknown>;
+    const offer: OfferDoc = {
+      gameId: snap.id,
+      ownerUid: String(d.ownerUid ?? ''),
+      friendSide: d.friendSide === 'p2' ? 'p2' : 'p1',
+      status: d.status === 'accepted' || d.status === 'declined' ? d.status : 'pending',
+      offeredAt: d.offeredAt instanceof Timestamp ? d.offeredAt : Timestamp.now(),
+    };
+    if (d.ownerSide === 'p1' || d.ownerSide === 'p2') offer.ownerSide = d.ownerSide;
+    return offer;
   },
 };

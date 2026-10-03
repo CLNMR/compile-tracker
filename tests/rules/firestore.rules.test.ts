@@ -6,7 +6,7 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { collection, collectionGroup, deleteDoc, doc, getDoc, getDocs, increment, query, setDoc, Timestamp, where } from 'firebase/firestore';
+import { collection, collectionGroup, deleteDoc, deleteField, doc, getDoc, getDocs, increment, query, serverTimestamp, setDoc, Timestamp, updateDoc, where, writeBatch, type Firestore } from 'firebase/firestore';
 
 const PROJECT_ID = 'compile-tracker-rules-test';
 const ALICE = 'alice-uid';
@@ -224,5 +224,152 @@ describe('analytics counters', () => {
     await assertFails(getDocs(query(collectionGroup(dbAs(ALICE), 'counters'), where('day', '>=', '2026-01-01'))));
     await assertSucceeds(getDocs(query(collectionGroup(dbAs(ADMIN), 'counters'), where('day', '>=', '2026-01-01'))));
     await assertSucceeds(getDoc(counter(ADMIN)));
+  });
+});
+
+/* ---------- handles, friends, offers ---------- */
+
+const CAROL = 'carol-uid';
+/** A Google-linked (non-anonymous) user. */
+const realAs = (uid: string) => env.authenticatedContext(uid, { firebase: { sign_in_provider: 'google.com' } }).firestore();
+const anonAs = (uid: string) => env.authenticatedContext(uid, { firebase: { sign_in_provider: 'anonymous' } }).firestore();
+
+function claim(db: Firestore, uid: string, handle: string, previous?: string) {
+  const b = writeBatch(db);
+  b.set(doc(db, 'handles', handle), { uid });
+  b.set(doc(db, 'profiles', uid), { handle });
+  if (previous) b.delete(doc(db, 'handles', previous));
+  return b.commit();
+}
+
+function befriend(db: Firestore, me: string, them: string, playerId?: string) {
+  const b = writeBatch(db);
+  b.set(doc(db, 'users', me, 'friends', them), playerId ? { since: serverTimestamp(), playerId } : { since: serverTimestamp() });
+  b.set(doc(db, 'users', them, 'friends', me), { since: serverTimestamp() }, { merge: true });
+  return b.commit();
+}
+
+const offerDoc = (owner = ALICE, extra: Record<string, unknown> = {}) => ({
+  ownerUid: owner,
+  friendSide: 'p2',
+  ownerSide: 'p1',
+  status: 'pending',
+  offeredAt: serverTimestamp(),
+  ...extra,
+});
+
+describe('handles and profiles', () => {
+  it('real accounts can claim a free handle; anonymous users cannot', async () => {
+    await assertSucceeds(claim(realAs(ALICE), ALICE, 'alice'));
+    await assertFails(claim(anonAs(BOB), BOB, 'bob'));
+    await assertSucceeds(getDoc(doc(dbAs(BOB), 'handles', 'alice')));
+    await assertSucceeds(getDoc(doc(dbAs(BOB), 'profiles', ALICE)));
+  });
+
+  it('handles are unique, well-formed and must match the profile', async () => {
+    await assertSucceeds(claim(realAs(ALICE), ALICE, 'alice'));
+    await assertFails(claim(realAs(BOB), BOB, 'alice'));
+    await assertFails(claim(realAs(BOB), BOB, 'Bob!'));
+    await assertFails(claim(realAs(BOB), BOB, 'ab'));
+    await assertFails(setDoc(doc(realAs(BOB), 'handles', 'bob'), { uid: BOB }));
+    await assertFails(setDoc(doc(realAs(BOB), 'profiles', BOB), { handle: 'alice' }));
+    await assertFails(getDocs(collection(dbAs(BOB), 'handles')));
+  });
+
+  it('changing a handle releases the old one', async () => {
+    await assertSucceeds(claim(realAs(ALICE), ALICE, 'alice'));
+    await assertSucceeds(claim(realAs(ALICE), ALICE, 'ally', 'alice'));
+    await assertSucceeds(claim(realAs(BOB), BOB, 'alice'));
+    // cannot delete someone else's handle
+    await assertFails(deleteDoc(doc(realAs(ALICE), 'handles', 'alice')));
+  });
+});
+
+describe('friends', () => {
+  beforeEach(async () => {
+    await claim(realAs(ALICE), ALICE, 'alice');
+    await claim(realAs(BOB), BOB, 'bob');
+  });
+
+  it('adding a friend writes both sides in one batch', async () => {
+    await assertSucceeds(befriend(realAs(ALICE), ALICE, BOB, 'p2xxxxxxxxxxxxxxxxxx'));
+    await assertSucceeds(getDoc(doc(realAs(BOB), 'users', BOB, 'friends', ALICE)));
+    await assertFails(getDoc(doc(realAs(CAROL), 'users', BOB, 'friends', ALICE)));
+    await assertFails(getDocs(collection(realAs(CAROL), 'users', ALICE, 'friends')));
+  });
+
+  it('the mirror doc alone, extra fields, anonymous users or accounts without a handle are rejected', async () => {
+    await assertFails(setDoc(doc(realAs(ALICE), 'users', BOB, 'friends', ALICE), { since: serverTimestamp() }));
+    const alice = realAs(ALICE);
+    const b = writeBatch(alice);
+    b.set(doc(alice, 'users', ALICE, 'friends', BOB), { since: serverTimestamp() });
+    b.set(doc(alice, 'users', BOB, 'friends', ALICE), { since: serverTimestamp(), playerId: 'x' });
+    await assertFails(b.commit());
+    await assertFails(befriend(anonAs(ALICE), ALICE, BOB));
+    await assertFails(befriend(realAs(ALICE), ALICE, CAROL));
+    await assertFails(befriend(realAs(ALICE), ALICE, ALICE));
+  });
+
+  it('only I can link my friend doc to a player; either side can end the friendship', async () => {
+    await befriend(realAs(ALICE), ALICE, BOB);
+    await assertSucceeds(updateDoc(doc(realAs(BOB), 'users', BOB, 'friends', ALICE), { playerId: 'p1xxxxxxxxxxxxxxxxxx' }));
+    await assertSucceeds(updateDoc(doc(realAs(BOB), 'users', BOB, 'friends', ALICE), { playerId: deleteField() }));
+    await assertFails(updateDoc(doc(realAs(ALICE), 'users', BOB, 'friends', ALICE), { playerId: 'x' }));
+    await assertFails(deleteDoc(doc(realAs(CAROL), 'users', BOB, 'friends', ALICE)));
+    const bob = realAs(BOB);
+    const b = writeBatch(bob);
+    b.delete(doc(bob, 'users', BOB, 'friends', ALICE));
+    b.delete(doc(bob, 'users', ALICE, 'friends', BOB));
+    await assertSucceeds(b.commit());
+  });
+
+  it('re-adding keeps the other side\'s player link', async () => {
+    await befriend(realAs(ALICE), ALICE, BOB);
+    await updateDoc(doc(realAs(BOB), 'users', BOB, 'friends', ALICE), { playerId: 'p1xxxxxxxxxxxxxxxxxx' });
+    await deleteDoc(doc(realAs(ALICE), 'users', ALICE, 'friends', BOB));
+    await assertSucceeds(befriend(realAs(ALICE), ALICE, BOB));
+    const snap = await getDoc(doc(realAs(BOB), 'users', BOB, 'friends', ALICE));
+    if (snap.data()?.playerId !== 'p1xxxxxxxxxxxxxxxxxx') throw new Error('player link lost');
+  });
+});
+
+describe('offers', () => {
+  const offerRef = (db: Firestore, to = BOB, gid = 'g1') => doc(db, 'users', to, 'offers', gid);
+
+  beforeEach(async () => {
+    await claim(realAs(ALICE), ALICE, 'alice');
+    await claim(realAs(BOB), BOB, 'bob');
+    await claim(realAs(CAROL), CAROL, 'carol');
+    await befriend(realAs(ALICE), ALICE, BOB, 'p2xxxxxxxxxxxxxxxxxx');
+  });
+
+  it('owners can offer games to friends only, always as pending', async () => {
+    await assertSucceeds(getDoc(offerRef(realAs(ALICE)))); // checking for an existing offer
+    await assertSucceeds(setDoc(offerRef(realAs(ALICE)), offerDoc()));
+    await assertFails(setDoc(offerRef(realAs(ALICE), BOB, 'g2'), offerDoc(ALICE, { status: 'accepted' })));
+    await assertFails(setDoc(offerRef(realAs(ALICE), BOB, 'g3'), offerDoc(CAROL)));
+    await assertFails(setDoc(offerRef(realAs(ALICE), BOB, 'g4'), offerDoc(ALICE, { friendSide: 'p1' })));
+    await assertFails(setDoc(offerRef(realAs(ALICE), BOB, 'g5'), offerDoc(ALICE, { note: 'hi' })));
+    await assertFails(setDoc(offerRef(realAs(CAROL), BOB, 'g6'), offerDoc(CAROL)));
+    await assertFails(setDoc(offerRef(realAs(ALICE), CAROL), offerDoc()));
+  });
+
+  it('only the recipient decides; the owner may only change the sides', async () => {
+    await setDoc(offerRef(realAs(ALICE)), offerDoc());
+    await assertFails(updateDoc(offerRef(realAs(ALICE)), { status: 'accepted' }));
+    await assertSucceeds(updateDoc(offerRef(realAs(ALICE)), { friendSide: 'p1', ownerSide: 'p2' }));
+    await assertSucceeds(updateDoc(offerRef(realAs(BOB)), { status: 'accepted' }));
+    await assertFails(updateDoc(offerRef(realAs(BOB)), { friendSide: 'p2', ownerSide: 'p1' }));
+    await assertFails(updateDoc(offerRef(realAs(BOB)), { status: 'maybe' }));
+  });
+
+  it('offers are private to the two friends', async () => {
+    await setDoc(offerRef(realAs(ALICE)), offerDoc());
+    await assertSucceeds(getDocs(collection(realAs(BOB), 'users', BOB, 'offers')));
+    await assertSucceeds(getDocs(query(collection(realAs(ALICE), 'users', BOB, 'offers'), where('ownerUid', '==', ALICE))));
+    await assertFails(getDoc(offerRef(realAs(CAROL))));
+    await assertFails(getDocs(collection(realAs(CAROL), 'users', BOB, 'offers')));
+    await assertFails(deleteDoc(offerRef(realAs(CAROL))));
+    await assertSucceeds(deleteDoc(offerRef(realAs(ALICE))));
   });
 });

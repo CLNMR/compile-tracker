@@ -37,7 +37,8 @@ export function filterGames(games: readonly GameDoc[], f: StatsFilter): GameDoc[
   };
 
   return games.filter((g) => {
-    if (f.scope === 'mine' && g.ownerUid !== f.myUid) return false;
+    // Accepted offers (`sharedBy`) are mine too; the 'mine' source already holds only those.
+    if (f.scope === 'mine' && g.ownerUid !== f.myUid && !g.sharedBy) return false;
     if (!includeTest && g.isTestData) return false;
     const ms = g.playedAt.toMillis();
     if (ms < fromMs || ms > toMs) return false;

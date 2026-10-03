@@ -62,12 +62,13 @@ export function sideOf(game: Pick<GameDoc, 'p1' | 'p2'>, key: SideKey): GameSide
 }
 
 /** Display label for one side of a game (real name for own players, pseudonym otherwise). */
-export function sideLabel(game: Pick<GameDoc, 'p1' | 'p2' | 'ownerUid'>, key: SideKey, label: LabelFn): string {
-  return label(sideOf(game, key).playerId, game.ownerUid);
+export function sideLabel(game: Pick<GameDoc, 'p1' | 'p2' | 'ownerUid' | 'sharedBy'>, key: SideKey, label: LabelFn): string {
+  // Accepted offers are remapped to my player ids.
+  return label(sideOf(game, key).playerId, game.sharedBy ? undefined : game.ownerUid);
 }
 
 /** Label of the winning side. */
-export function winnerLabel(game: Pick<GameDoc, 'p1' | 'p2' | 'ownerUid' | 'winner'>, label: LabelFn): string {
+export function winnerLabel(game: Pick<GameDoc, 'p1' | 'p2' | 'ownerUid' | 'sharedBy' | 'winner'>, label: LabelFn): string {
   return sideLabel(game, game.winner, label);
 }
 

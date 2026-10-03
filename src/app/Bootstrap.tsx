@@ -5,6 +5,8 @@ import { useAuthStore } from '@/store/authStore';
 import { useGamesStore } from '@/store/gamesStore';
 import { usePlayersStore } from '@/store/playersStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useFriendsStore } from '@/store/friendsStore';
+import { useOffersStore } from '@/store/offersStore';
 
 /**
  * Starts auth and, once a uid exists, the live data stores.
@@ -36,6 +38,17 @@ export function Bootstrap({ children, fallback }: { children: ReactNode; fallbac
       useSettingsStore.getState().stop();
     };
   }, [uid]);
+
+  // Friends and offers need a Google-linked account (rules reject anonymous users).
+  useEffect(() => {
+    if (!uid || isAnonymous) return;
+    useFriendsStore.getState().start(uid);
+    useOffersStore.getState().start(uid);
+    return () => {
+      useFriendsStore.getState().stop();
+      useOffersStore.getState().stop();
+    };
+  }, [uid, isAnonymous]);
 
   if (loading || !uid) {
     return (
