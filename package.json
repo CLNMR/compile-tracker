@@ -17,6 +17,7 @@
     "e2e": "node e2e/smoke.mjs e2e/out",
     "e2e:friends": "node e2e/friends.mjs e2e/out-friends",
     "e2e:email": "node e2e/email.mjs e2e/out-email",
+    "auth-emails": "node scripts/auth-emails.mjs",
     "deploy": "npm run build && firebase deploy --only hosting,firestore",
     "deploy:rules": "firebase deploy --only firestore"
   },

@@ -13,3 +13,4 @@ ui-debug.log
 .firebase
 e2e/out*
 *.tsbuildinfo
+auth-emails-preview/
