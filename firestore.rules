@@ -78,9 +78,9 @@ service cloud.firestore {
         && request.resource.data.n is int;
     }
 
-    // All-time number of created accounts, no source split: analytics/total/counters/newUser = { day: 'total', n }.
+    // All-time number of Google-linked (non-anonymous) accounts, no source split: analytics/total/counters/link = { day: 'total', n }.
     function validTotal(day, cid) {
-      return day == 'total' && cid == 'newUser'
+      return day == 'total' && cid == 'link'
         && request.resource.data.keys().hasOnly(['day', 'n'])
         && request.resource.data.day == 'total'
         && request.resource.data.n is int;

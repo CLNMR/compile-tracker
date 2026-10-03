@@ -147,9 +147,9 @@ export const dev: Shape<typeof en> = {
       active: 'Aktive Konten',
       activeSub: 'Spiel im Zeitraum erfasst',
       new: 'Neue Konten',
-      newSub: 'im Zeitraum erstellt · {withGame} mit erstem Spiel',
+      newSub: 'im Zeitraum mit Google verknüpft',
       all: 'Konten insgesamt',
-      allSub: 'alle erstellten · {withGame} mit Spiel',
+      allSub: 'mit Google verknüpft, gesamt',
     },
     links: {
       title: 'Markierte Links',

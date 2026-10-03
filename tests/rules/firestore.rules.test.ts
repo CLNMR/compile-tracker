@@ -205,8 +205,8 @@ describe('analytics counters', () => {
     await assertFails(deleteDoc(counter(ALICE)));
   });
 
-  it('the all-time accounts total only accepts +1 steps', async () => {
-    const total = (uid: string | null, id = 'newUser') => doc(dbAs(uid), 'analytics', 'total', 'counters', id);
+  it('the all-time linked-accounts total only accepts +1 steps', async () => {
+    const total = (uid: string | null, id = 'link') => doc(dbAs(uid), 'analytics', 'total', 'counters', id);
     const bumpTotal = (uid: string | null, id?: string) => setDoc(total(uid, id), { day: 'total', n: increment(1) }, { merge: true });
     await assertSucceeds(bumpTotal(ALICE));
     await assertSucceeds(bumpTotal(BOB));

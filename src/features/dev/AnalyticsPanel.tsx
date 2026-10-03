@@ -126,19 +126,19 @@ export function AnalyticsPanel() {
             })}
           />
           <StatTile size="sm" label={t('dev.analytics.activity.active')} value={number(activity.activeOwners)} sub={t('dev.analytics.activity.activeSub')} />
-          {/* Created accounts come from the newUser counters; "with a game" from the games themselves. */}
+          {/* Accounts = Google-linked (non-anonymous), from the link counters. */}
           <StatTile
             size="sm"
             tone="accent"
             label={t('dev.analytics.activity.new')}
-            value={rows ? number(summary.totals.newUser) : '–'}
-            sub={t('dev.analytics.activity.newSub', { withGame: number(activity.newOwners) })}
+            value={rows ? number(summary.totals.link) : '–'}
+            sub={t('dev.analytics.activity.newSub')}
           />
           <StatTile
             size="sm"
             label={t('dev.analytics.activity.all')}
             value={accountsTotal != null ? number(accountsTotal) : '–'}
-            sub={t('dev.analytics.activity.allSub', { withGame: number(activity.allOwners) })}
+            sub={t('dev.analytics.activity.allSub')}
           />
         </div>
 

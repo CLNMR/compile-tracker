@@ -7,20 +7,20 @@ import { dayKey, parseCounterId, type CounterKind, type CounterRow } from '@/sta
  * Cookie-free counters: `analytics/{day}/counters/{kind}_{source}` = { day, n }.
  * No uid, no device id — just one increment per event. The rules only allow +1 steps on whitelisted ids;
  * only admins can read them (collection-group query below).
- * New accounts also bump the all-time total `analytics/total/counters/newUser` (no source split).
+ * Google links also bump the all-time total `analytics/total/counters/link` (no source split) = non-anonymous accounts.
  */
 
-const totalAccountsRef = () => doc(db, 'analytics', 'total', 'counters', 'newUser');
+const totalAccountsRef = () => doc(db, 'analytics', 'total', 'counters', 'link');
 
 export async function bumpCounter(kind: CounterKind, source: Source, at: Date = new Date()): Promise<void> {
   const day = dayKey(at);
   const batch = writeBatch(db);
   batch.set(doc(db, 'analytics', day, 'counters', `${kind}_${source}`), { day, n: increment(1) }, { merge: true });
-  if (kind === 'newUser') batch.set(totalAccountsRef(), { day: 'total', n: increment(1) }, { merge: true });
+  if (kind === 'link') batch.set(totalAccountsRef(), { day: 'total', n: increment(1) }, { merge: true });
   await batch.commit();
 }
 
-/** All accounts ever created (anonymous included). Admin only. Null if the total doc does not exist yet. */
+/** All Google-linked (non-anonymous) accounts ever. Admin only. Null if the total doc does not exist yet. */
 export async function fetchAccountsTotal(): Promise<number | null> {
   const snap = await getDoc(totalAccountsRef());
   const n = (snap.data() as { n?: unknown } | undefined)?.n;

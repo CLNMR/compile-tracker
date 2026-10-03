@@ -148,9 +148,9 @@ export const dev = {
       active: 'Active accounts',
       activeSub: 'recorded a game in range',
       new: 'New accounts',
-      newSub: 'created in range · {withGame} with a first game',
+      newSub: 'linked to Google in range',
       all: 'Accounts ever',
-      allSub: 'all created · {withGame} with a game',
+      allSub: 'linked to Google, all time',
     },
     links: {
       title: 'Tagged links',
