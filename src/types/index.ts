@@ -92,7 +92,10 @@ export function normalizeHandle(raw: string): string {
   return raw.trim().replace(/^@/, '').toLowerCase();
 }
 
-/** Synthetic player id for a friend account that I have not linked to one of my players. */
+/** Doc id of the player created for a friend (`users/{me}/players/friend_{uid}`); fixed so devices can't create two. */
+export const friendPlayerDocId = (uid: string): string => `friend_${uid}`;
+
+/** Synthetic player id for a friend account without one of my players (e.g. a former friend). */
 export const FRIEND_PLAYER_PREFIX = 'friend:';
 export const friendPlayerId = (uid: string): string => `${FRIEND_PLAYER_PREFIX}${uid}`;
 export const friendUidOf = (playerId: string): string | null =>

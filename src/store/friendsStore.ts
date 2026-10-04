@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import type { Unsubscribe } from 'firebase/firestore';
-import { fetchProfile, subscribeFriends, subscribeProfile } from '@/repo/friends';
+import { ensureFriendPlayer, fetchProfile, subscribeFriends, subscribeProfile } from '@/repo/friends';
 import type { FriendDoc } from '@/types';
 
-/** My handle and friends (with their handles). Only runs for Google-linked accounts. */
+/** My handle and friends (with their handles). Only runs for real accounts (Google or confirmed email). */
 interface FriendsState {
   /** My handle; null = not claimed yet. */
   handle: string | null;
@@ -18,6 +18,20 @@ interface FriendsState {
 
 let unsubs: Unsubscribe[] = [];
 let currentUid: string | null = null;
+/** Friends whose player is being created right now (snapshots arrive while the batch is in flight). */
+const ensuring = new Set<string>();
+
+/** Every friend is one of my players; friends who added me (or older friendships) get `@handle` created and linked. */
+function ensurePlayers(uid: string, friends: readonly FriendDoc[], handles: Record<string, string>) {
+  for (const f of friends) {
+    const handle = handles[f.uid];
+    if (f.playerId || !handle || ensuring.has(f.uid)) continue;
+    ensuring.add(f.uid);
+    ensureFriendPlayer(uid, f.uid, handle)
+      .catch((e: unknown) => console.warn('[friends] could not create a player for a friend', e))
+      .finally(() => ensuring.delete(f.uid));
+  }
+}
 
 export const useFriendsStore = create<FriendsState>((set, get) => ({
   handle: null,
@@ -51,10 +65,15 @@ export const useFriendsStore = create<FriendsState>((set, get) => ({
           gotFriends = true;
           set({ friends });
           done();
+          ensurePlayers(uid, friends, get().handles);
           for (const f of friends) {
             if (get().handles[f.uid]) continue;
             fetchProfile(f.uid)
-              .then((p) => p && set((st) => ({ handles: { ...st.handles, [f.uid]: p.handle } })))
+              .then((p) => {
+                if (!p || currentUid !== uid) return;
+                set((st) => ({ handles: { ...st.handles, [f.uid]: p.handle } }));
+                ensurePlayers(uid, get().friends, get().handles);
+              })
               .catch(() => {});
           }
         },

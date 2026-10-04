@@ -1,7 +1,7 @@
 /** Handles, friends (Players page) and games offered by friends. */
 export const friends = {
   title: 'Friends',
-  intro: 'Add friends who also use Compile Tracker. Adding someone puts you on their list too. Link a friend to one of your players, and the games you record with that player are offered to them for their own stats.',
+  intro: 'Add friends who also use Compile Tracker. Adding someone puts you on their list too. Every friend is one of your players (a new one named after their handle, or one you already have), and the games you record with that player are offered to them for their own stats.',
   you: 'You',
   handle: {
     title: 'Your handle',
@@ -35,12 +35,12 @@ export const friends = {
     title: 'Add friend',
     body: 'You and @{handle} will appear on each other’s friend lists.',
     linkLabel: 'This friend is my player',
-    linkNone: 'No player (link later)',
-    linkHint: 'Games you recorded with this player are offered to @{handle}, and so are new ones.',
+    linkNew: 'New player @{handle}',
+    linkHint: 'Already recorded games with this friend under another name? Pick that player: those games are offered to @{handle}, and so are new ones.',
     confirm: 'Add friend',
   },
   linkDialog: {
-    title: 'Link @{handle} to a player',
+    title: 'Which player is @{handle}?',
     save: 'Save',
   },
   removeDialog: {
@@ -51,8 +51,6 @@ export const friends = {
   list: {
     empty: 'no friends yet.',
     linked: 'is {name} in your games',
-    notLinked: 'not linked to a player',
-    link: 'Link player',
     change: 'Change',
     remove: 'Remove friend',
   },
@@ -60,7 +58,6 @@ export const friends = {
     added: 'Added @{handle}',
     removed: 'Removed @{handle}',
     linked: 'Linked to {name}',
-    unlinked: 'Player link removed',
     offered_one: '{count} game offered to @{handle}',
     offered_other: '{count} games offered to @{handle}',
     gameOffered_one: 'Offered to your friend',

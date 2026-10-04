@@ -58,9 +58,9 @@ Adding a string: put the English text in `src/i18n/messages/en/<namespace>.ts`, 
 Non-anonymous accounts only, Google or email (rules check `sign_in_provider != 'anonymous'`).
 
 - **Handles**: `handles/{handle} = { uid }` (unique by doc id) and `profiles/{uid} = { handle }`, written together in one batch. QR codes encode `/add/<handle>`, which opens the Players page with the handle looked up.
-- **Friends**: `users/{uid}/friends/{friendUid} = { since, playerId? }`. Adding writes my doc and the mirror doc in the friend's account in one batch (the mirror may only carry `since`). `playerId` links the friend to one of my players.
+- **Friends**: `users/{uid}/friends/{friendUid} = { since, playerId? }`. Adding writes my doc and the mirror doc in the friend's account in one batch (the mirror may only carry `since`). `playerId` makes every friend one of my players: a new `users/{uid}/players/friend_{friendUid}` named `@handle` (created with the friendship, or by the friends store for friends who added me), or an existing player I pick instead.
 - **Offers**: `users/{recipient}/offers/{gameId} = { ownerUid, friendSide, ownerSide?, status, offeredAt }`. Saving a game (and linking a friend to a player) offers every game with that player; the owner writes the sides, only the recipient sets `status`. Games themselves are unchanged and carry no uids beyond `ownerUid`.
-- **Mine scope**: my games plus accepted offers, remapped by `src/stats/perspective.ts` (my side → my "me" player, the owner's side → my player linked to them or `friend:<uid>`). This also means a game played between two users is stored once, not twice.
+- **Mine scope**: my games plus accepted offers, remapped by `src/stats/perspective.ts` (my side → my "me" player, the owner's side → my player for them, or `friend:<uid>` for former friends). This also means a game played between two users is stored once, not twice.
 
 ## Analytics
 

@@ -3,7 +3,7 @@ import type { friends as en } from '../en/friends';
 
 export const friends: Shape<typeof en> = {
   title: 'Freunde',
-  intro: 'Füge Freunde hinzu, die Compile Tracker auch nutzen. Du landest dabei automatisch auch auf ihrer Liste. Verknüpfst du einen Freund mit einem deiner Spieler, werden dieser Person die Spiele mit diesem Spieler für die eigene Statistik angeboten.',
+  intro: 'Füge Freunde hinzu, die Compile Tracker auch nutzen. Du landest dabei automatisch auch auf ihrer Liste. Jeder Freund ist einer deiner Spieler (ein neuer mit seinem Handle oder einer, den du schon hast), und die Spiele mit diesem Spieler werden ihm für die eigene Statistik angeboten.',
   you: 'Du',
   handle: {
     title: 'Dein Handle',
@@ -37,12 +37,12 @@ export const friends: Shape<typeof en> = {
     title: 'Freund hinzufügen',
     body: 'Du und @{handle} erscheint gegenseitig in der Freundesliste.',
     linkLabel: 'Dieser Freund ist mein Spieler',
-    linkNone: 'Kein Spieler (später verknüpfen)',
-    linkHint: 'Spiele, die du mit diesem Spieler erfasst hast, werden @{handle} angeboten, neue ebenso.',
+    linkNew: 'Neuer Spieler @{handle}',
+    linkHint: 'Schon Spiele mit diesem Freund unter anderem Namen erfasst? Wähle diesen Spieler: Diese Spiele werden @{handle} angeboten, neue ebenso.',
     confirm: 'Freund hinzufügen',
   },
   linkDialog: {
-    title: '@{handle} mit Spieler verknüpfen',
+    title: 'Welcher Spieler ist @{handle}?',
     save: 'Speichern',
   },
   removeDialog: {
@@ -53,8 +53,6 @@ export const friends: Shape<typeof en> = {
   list: {
     empty: 'noch keine Freunde.',
     linked: 'ist {name} in deinen Spielen',
-    notLinked: 'mit keinem Spieler verknüpft',
-    link: 'Spieler verknüpfen',
     change: 'Ändern',
     remove: 'Freund entfernen',
   },
@@ -62,7 +60,6 @@ export const friends: Shape<typeof en> = {
     added: '@{handle} hinzugefügt',
     removed: '@{handle} entfernt',
     linked: 'Mit {name} verknüpft',
-    unlinked: 'Verknüpfung entfernt',
     offered_one: '{count} Spiel @{handle} angeboten',
     offered_other: '{count} Spiele @{handle} angeboten',
     gameOffered_one: 'Deinem Freund angeboten',

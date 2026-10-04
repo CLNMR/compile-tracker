@@ -165,15 +165,26 @@ try {
   check(await seen(alice.page.getByText('is Bobby in your games')), 'friend row shows link');
   await alice.shot('04-friend-added');
 
-  step('Bob sees Alice automatically and links her to "Ali"');
+  step('Bob sees Alice automatically, as his new player "@alice"');
   await bob.page.goto(`${BASE}/players`, { waitUntil: 'domcontentloaded' });
-  await bob.page.getByText(`@${A}`, { exact: true }).waitFor({ timeout: 10_000 }).catch(() => problems.push('Bob: @alice not in friend list'));
-  await bob.page.getByRole('button', { name: /link player/i }).click();
-  const link = bob.page.getByRole('dialog', { name: new RegExp(`link @${A}`, 'i') });
+  await bob.page.getByText(`@${A}`, { exact: true }).first().waitFor({ timeout: 10_000 }).catch(() => problems.push('Bob: @alice not in friend list'));
+  check(await seen(bob.page.getByText(`is @${A} in your games`)), 'friend became a player automatically');
+  check(!!(await get(`users/${bob.uid}/players/friend_${alice.uid}`)), 'player doc friend_<uid> created');
+  await bob.page.goto(`${BASE}/games/new`, { waitUntil: 'domcontentloaded' });
+  await bob.page.getByRole('combobox', { name: /player 2/i }).click();
+  check(await seen(bob.page.getByRole('option', { name: `@${A}` })), 'friend selectable in the new-game wizard');
+  await bob.page.keyboard.press('Escape');
+
+  step('Bob changes Alice to his existing player "Ali"');
+  await bob.page.goto(`${BASE}/players`, { waitUntil: 'domcontentloaded' });
+  await bob.page.getByRole('button', { name: /^change$/i }).click();
+  const link = bob.page.getByRole('dialog', { name: new RegExp(`which player is @${A}`, 'i') });
   await link.getByRole('combobox').click();
-  await bob.page.getByRole('option', { name: 'Ali' }).click();
+  await bob.page.getByRole('option', { name: 'Ali', exact: true }).click();
   await link.getByRole('button', { name: /^save$/i }).click();
   check(await seen(bob.page.getByText('is Ali in your games')), 'Bob linked Alice to Ali');
+  await bob.page.waitForTimeout(800);
+  check(!(await get(`users/${bob.uid}/players/friend_${alice.uid}`)), 'unused auto player removed');
   await bob.shot('04b-linked');
 
   step('Bob reviews offers');
@@ -243,8 +254,13 @@ try {
 
   step('deep link /add/bob opens the add dialog for Alice');
   await ap.goto(`${BASE}/add/${B}`, { waitUntil: 'domcontentloaded' });
-  check(await seen(ap.getByRole('dialog', { name: /add friend/i })), 'deep link → add dialog');
+  const again = ap.getByRole('dialog', { name: /add friend/i });
+  check(await seen(again), 'deep link → add dialog');
+  check(await seen(again.getByText(`New player @${B}`)), 'default: a new player named after the handle');
   await alice.shot('08-deeplink');
+  await again.getByRole('button', { name: /^add friend$/i }).click();
+  check(await seen(ap.getByText(`is @${B} in your games`)), 're-added friend is the new player');
+  check(!!(await get(`users/${alice.uid}/players/friend_${bob.uid}`)), 'player created with the friendship');
 } catch (e) {
   problems.push(`fatal: ${e.message}`);
 } finally {

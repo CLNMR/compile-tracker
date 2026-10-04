@@ -25,16 +25,19 @@ import { useGames } from '@/hooks/useGames';
 import { usePlayers } from '@/hooks/usePlayers';
 import { useSettings } from '@/hooks/useSettings';
 import { useT } from '@/i18n';
-import { addFriend, claimHandle, HandleError, lookupHandle, removeFriend, setFriendPlayer, suggestHandle } from '@/repo/friends';
+import { addFriend, claimHandle, HandleError, lookupHandle, removeFriend, setFriendPlayer, suggestHandle, type FriendPlayer } from '@/repo/friends';
 import { offerPastGames, withdrawPendingOffers } from '@/repo/offers';
+import { deletePlayer } from '@/repo/players';
 import { useFriendsStore } from '@/store/friendsStore';
-import { HANDLE_RE, normalizeHandle, type FriendDoc } from '@/types';
+import { friendPlayerDocId, HANDLE_RE, normalizeHandle, type FriendDoc } from '@/types';
 import { friendLink } from './friendLink';
 import { ScanQrDialog, ShowQrDialog } from './QrDialogs';
 import s from './FriendsSection.module.css';
 
-/** Select value for "not linked" (the Select treats '' as no selection). */
-const NO_PLAYER = 'none';
+/** Select value for "new player named after the handle" (the Select treats '' as no selection). */
+const NEW_PLAYER = 'new';
+
+const friendPlayerFrom = (value: string, handle: string): FriendPlayer => (value === NEW_PLAYER ? { newFromHandle: handle } : { playerId: value });
 
 type ErrorCode = 'invalid' | 'taken' | 'notFound' | 'self' | 'already' | 'needHandle';
 
@@ -297,11 +300,12 @@ function FriendList({
           <li key={f.uid} className={s.friend}>
             <div className={s.friendId}>
               <span className={s.handle}>{handles[f.uid] ? `@${handles[f.uid]}` : '…'}</span>
-              <span className={s.muted}>{player ? t('friends.list.linked', { name: player.name }) : t('friends.list.notLinked')}</span>
+              {/* no player yet: the store is creating `@handle` for them */}
+              <span className={s.muted}>{player ? t('friends.list.linked', { name: player.name }) : '…'}</span>
             </div>
             <div className={s.actions}>
-              <Button size="sm" variant="ghost" iconLeft={<IconLink />} onClick={() => onLink(f)}>
-                {player ? t('friends.list.change') : t('friends.list.link')}
+              <Button size="sm" variant="ghost" iconLeft={<IconLink />} onClick={() => onLink(f)} disabled={!player}>
+                {t('friends.list.change')}
               </Button>
               <IconButton label={t('friends.list.remove')} size="sm" variant="danger" onClick={() => onRemove(f)}>
                 <IconTrash />
@@ -316,21 +320,25 @@ function FriendList({
 
 /* ---------- dialogs ---------- */
 
-/** Players I can link to a friend: active, not "me", not linked to another friend. */
-function usePlayerOptions(current?: string) {
+/**
+ * Players a friend can be: a new `@handle` player (unless it exists already), or one of mine that is
+ * active, not "me" and not another friend.
+ */
+function usePlayerOptions(friendUid: string | undefined, handle: string, current?: string) {
   const { t } = useT();
   const { players } = usePlayers();
   const { defaultPlayerId } = useSettings();
   const friends = useFriendsStore((st) => st.friends);
   return useMemo(() => {
     const taken = new Set(friends.map((f) => f.playerId).filter((id) => id && id !== current));
+    const own = friendUid ? players.find((p) => p.id === friendPlayerDocId(friendUid)) : undefined;
     return [
-      { value: NO_PLAYER, label: t('friends.addDialog.linkNone') },
+      ...(own ? [] : [{ value: NEW_PLAYER, label: t('friends.addDialog.linkNew', { handle }) }]),
       ...players
-        .filter((p) => !p.archived && p.id !== defaultPlayerId && !taken.has(p.id))
+        .filter((p) => p.id === current || (!p.archived && p.id !== defaultPlayerId && !taken.has(p.id)))
         .map((p) => ({ value: p.id, label: p.name, text: p.name })),
     ];
-  }, [players, defaultPlayerId, friends, current, t]);
+  }, [players, defaultPlayerId, friends, friendUid, handle, current, t]);
 }
 
 /** My own games (not accepted offers) — the ones I can offer to a friend. */
@@ -356,16 +364,16 @@ function AddFriendDialog({ target, onClose }: { target: { uid: string; handle: s
   const { t } = useT();
   const uid = useUid();
   const toast = useToast();
-  const options = usePlayerOptions();
+  const options = usePlayerOptions(target?.uid, target?.handle ?? '');
   const offerPast = useOfferPast();
-  const [playerId, setPlayerId] = useState(NO_PLAYER);
+  const [playerId, setPlayerId] = useState(NEW_PLAYER);
   const [busy, setBusy] = useState(false);
-  const linked = playerId === NO_PLAYER ? undefined : playerId;
 
   const [prev, setPrev] = useState(target);
   if (prev !== target) {
     setPrev(target);
-    setPlayerId(NO_PLAYER);
+    // a player left over from an earlier friendship with them is the natural pick
+    setPlayerId(options.some((o) => o.value === NEW_PLAYER) || !target ? NEW_PLAYER : friendPlayerDocId(target.uid));
     setBusy(false);
   }
 
@@ -373,9 +381,9 @@ function AddFriendDialog({ target, onClose }: { target: { uid: string; handle: s
     if (!target) return;
     setBusy(true);
     try {
-      await addFriend(uid, target.uid, linked);
+      const linked = await addFriend(uid, target.uid, friendPlayerFrom(playerId, target.handle));
       toast.push({ title: t('friends.toast.added', { handle: target.handle }), tone: 'win' });
-      if (linked) await offerPast({ uid: target.uid, since: Timestamp.now(), playerId: linked }, target.handle);
+      if (playerId !== NEW_PLAYER) await offerPast({ uid: target.uid, since: Timestamp.now(), playerId: linked }, target.handle);
       onClose();
     } catch (e) {
       toast.push({ title: t('friends.errors.failed'), description: (e as Error).message, tone: 'loss' });
@@ -420,32 +428,32 @@ function LinkPlayerDialog({ friend, handle, onClose }: { friend: FriendDoc | nul
   const uid = useUid();
   const toast = useToast();
   const { byId } = usePlayers();
-  const options = usePlayerOptions(friend?.playerId);
+  const own = useOwnGames();
+  const options = usePlayerOptions(friend?.uid, handle ?? '', friend?.playerId);
   const offerPast = useOfferPast();
-  const [playerId, setPlayerId] = useState(NO_PLAYER);
+  const [playerId, setPlayerId] = useState('');
   const [busy, setBusy] = useState(false);
 
   const [prev, setPrev] = useState(friend);
   if (prev !== friend) {
     setPrev(friend);
-    setPlayerId(friend?.playerId ?? NO_PLAYER);
+    setPlayerId(friend?.playerId ?? NEW_PLAYER);
     setBusy(false);
   }
 
   const save = async () => {
     if (!friend) return;
-    const next = playerId === NO_PLAYER ? null : playerId;
-    if (next === (friend.playerId ?? null)) return onClose();
+    if (playerId === friend.playerId) return onClose();
     setBusy(true);
     try {
-      await setFriendPlayer(uid, friend.uid, next);
-      if (friend.playerId) await withdrawPendingOffers(uid, friend.uid);
-      if (next) {
-        toast.push({ title: t('friends.toast.linked', { name: byId.get(next)?.name ?? '' }), tone: 'win' });
-        await offerPast({ ...friend, playerId: next }, handle ?? '');
-      } else {
-        toast.push({ title: t('friends.toast.unlinked') });
-      }
+      const previous = friend.playerId;
+      const next = await setFriendPlayer(uid, friend.uid, friendPlayerFrom(playerId, handle ?? ''));
+      if (previous) await withdrawPendingOffers(uid, friend.uid);
+      // the auto-created `@handle` player goes away when it was never used in a game
+      const unused = (id: string) => !own.some((g) => g.p1.playerId === id || g.p2.playerId === id);
+      if (previous === friendPlayerDocId(friend.uid) && unused(previous)) await deletePlayer(uid, previous);
+      toast.push({ title: t('friends.toast.linked', { name: byId.get(next)?.name ?? `@${handle ?? ''}` }), tone: 'win' });
+      await offerPast({ ...friend, playerId: next }, handle ?? '');
       onClose();
     } catch (e) {
       toast.push({ title: t('friends.errors.failed'), description: (e as Error).message, tone: 'loss' });

@@ -1,21 +1,24 @@
 import {
   collection,
-  deleteField,
   doc,
   getDoc,
   onSnapshot,
   serverTimestamp,
-  updateDoc,
   writeBatch,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '@/firebase/app';
 import { friendConverter, profileConverter } from '@/firebase/converters';
-import { HANDLE_RE, normalizeHandle, type FriendDoc, type Profile } from '@/types';
+import { normalizePlayerName } from '@/repo/players';
+import { friendPlayerDocId, HANDLE_RE, normalizeHandle, type FriendDoc, type Profile } from '@/types';
 
 const profileRef = (uid: string) => doc(db, 'profiles', uid).withConverter(profileConverter);
 const handleRef = (handle: string) => doc(db, 'handles', handle);
 const friendRef = (uid: string, friendUid: string) => doc(db, 'users', uid, 'friends', friendUid);
+const friendPlayerRef = (uid: string, friendUid: string) => doc(db, 'users', uid, 'players', friendPlayerDocId(friendUid));
+
+/** Every friend is one of my players: either an existing one I picked, or a new player named after their handle. */
+export type FriendPlayer = { playerId: string } | { newFromHandle: string };
 
 export class HandleError extends Error {
   constructor(public readonly code: 'invalid' | 'taken' | 'notFound' | 'self') {
@@ -78,13 +81,31 @@ export function subscribeFriends(uid: string, onData: (friends: FriendDoc[]) => 
   );
 }
 
-/** Mutual add: my doc (optionally linked to one of my players) and the mirror doc in their account. */
-export async function addFriend(myUid: string, friendUid: string, playerId?: string): Promise<void> {
+/** Mutual add: my doc (linked to one of my players) and the mirror doc in their account. Returns my player id. */
+export async function addFriend(myUid: string, friendUid: string, player: FriendPlayer): Promise<string> {
   if (friendUid === myUid) throw new HandleError('self');
   const batch = writeBatch(db);
-  batch.set(friendRef(myUid, friendUid), playerId ? { since: serverTimestamp(), playerId } : { since: serverTimestamp() });
+  const playerId = 'playerId' in player ? player.playerId : friendPlayerDocId(friendUid);
+  if ('newFromHandle' in player) batch.set(friendPlayerRef(myUid, friendUid), newFriendPlayer(player.newFromHandle));
+  batch.set(friendRef(myUid, friendUid), { since: serverTimestamp(), playerId });
   // merge: re-adding keeps the player the other side linked to me
   batch.set(friendRef(friendUid, myUid), { since: serverTimestamp() }, { merge: true });
+  await batch.commit();
+  return playerId;
+}
+
+const newFriendPlayer = (handle: string) => ({ name: normalizePlayerName(`@${handle}`), createdAt: serverTimestamp(), archived: false });
+
+/**
+ * A friend without a player (they added me, or an older friendship): create the player `@handle` and link it.
+ * The fixed doc id makes this idempotent; an existing doc (e.g. renamed) is kept.
+ */
+export async function ensureFriendPlayer(myUid: string, friendUid: string, handle: string): Promise<void> {
+  const ref = friendPlayerRef(myUid, friendUid);
+  const exists = (await getDoc(ref)).exists();
+  const batch = writeBatch(db);
+  if (!exists) batch.set(ref, newFriendPlayer(handle));
+  batch.update(friendRef(myUid, friendUid), { playerId: ref.id });
   await batch.commit();
 }
 
@@ -96,6 +117,12 @@ export async function removeFriend(myUid: string, friendUid: string): Promise<vo
   await batch.commit();
 }
 
-export async function setFriendPlayer(myUid: string, friendUid: string, playerId: string | null): Promise<void> {
-  await updateDoc(friendRef(myUid, friendUid), { playerId: playerId ?? deleteField() });
+/** Re-link a friend to another player (existing, or a new `@handle` player). Returns the player id. */
+export async function setFriendPlayer(myUid: string, friendUid: string, player: FriendPlayer): Promise<string> {
+  const batch = writeBatch(db);
+  const playerId = 'playerId' in player ? player.playerId : friendPlayerDocId(friendUid);
+  if ('newFromHandle' in player) batch.set(friendPlayerRef(myUid, friendUid), newFriendPlayer(player.newFromHandle));
+  batch.update(friendRef(myUid, friendUid), { playerId });
+  await batch.commit();
+  return playerId;
 }
