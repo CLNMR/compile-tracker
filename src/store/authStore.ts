@@ -199,6 +199,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           return;
         }
       }
+      // Confirmed elsewhere: the startup reload already shows emailVerified, but the cached token
+      // (valid up to an hour) still says email_verified=false, so the rules would reject friend writes.
+      if (user.emailVerified && user.providerData.some((p) => p.providerId === 'password')) {
+        try {
+          const { claims } = await user.getIdTokenResult();
+          if (claims.email_verified !== true) await user.getIdToken(true);
+        } catch (e) {
+          console.warn('[auth] token refresh failed', e);
+        }
+      }
       set({
         user,
         uid: user.uid,

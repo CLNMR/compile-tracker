@@ -101,13 +101,20 @@ try {
   check(await seen(page.getByText('Confirmation email sent')), 'resend works');
   await shot('03-verify-pending');
 
-  step('confirm through /auth/action');
+  // Like opening the link in the mail app's browser: another context confirms, this page keeps its cached token.
+  step('confirm through /auth/action in another browser');
   const verifyCode = await oobCode('VERIFY_EMAIL');
   check(!!verifyCode, 'emulator has a verification code');
-  await page.goto(`${BASE}/auth/action?mode=verifyEmail&oobCode=${verifyCode}&continueUrl=${encodeURIComponent(`${BASE}/players`)}`, { waitUntil: 'domcontentloaded' });
-  check(await seen(page.getByText('email confirmed.')), 'action page confirms');
-  await shot('04-verified');
-  await page.getByRole('link', { name: /^continue$/i }).click();
+  const mailCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'en-US' });
+  const mailPage = await mailCtx.newPage();
+  await mailPage.goto(`${BASE}/auth/action?mode=verifyEmail&oobCode=${verifyCode}&continueUrl=${encodeURIComponent(`${BASE}/players`)}`, { waitUntil: 'domcontentloaded' });
+  check(await seen(mailPage.getByText('email confirmed.')), 'action page confirms');
+  await mailPage.screenshot({ path: `${OUT}/04-verified.png`, fullPage: true });
+  check((await mailPage.getByRole('link', { name: /^continue$/i }).getAttribute('href')) === '/players', 'continue goes to the continueUrl path');
+  await mailCtx.close();
+
+  step('reopen the app: confirmed, and the token knows it');
+  await page.goto(`${BASE}/players`, { waitUntil: 'domcontentloaded' });
   check(await seen(page.getByLabel('Your handle')), 'handle field after confirming');
   check((await page.getByLabel('Your handle').inputValue()).startsWith('carol'), 'handle suggested from the email');
   const handle = `carol_${RUN}`.slice(0, 20);
