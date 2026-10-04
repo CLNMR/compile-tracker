@@ -6,7 +6,7 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
 
     // Admin uids — keep in sync with VITE_ADMIN_UIDS. Changing this requires `npm run deploy:rules`.
-    function isAdmin() { return signedIn() && request.auth.uid in ['lZnbYJhKdjQi6CDr3m23v2mmSGF2']; }
+    function isAdmin() { return signedIn() && request.auth.uid in ['lZnbYJhKdjQi6CDr3m23v2mmSGF2', 'aKGjRNBvM6WWoA09TKoSz3Ya6QB3']; }
 
     // Google-linked (non-anonymous) account: required for handles, friends and offers.
     // Google or a confirmed email/password account (unconfirmed addresses can't use friends).
