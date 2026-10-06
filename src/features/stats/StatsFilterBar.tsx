@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import { Badge, Button, Checkbox, Chip, IconChevron, Panel, SegmentedControl, TextField, useMediaQuery } from '@/components/ui';
 import { SETS } from '@/data/sets';
+import { useAuth } from '@/hooks/useAuth';
 import { useT, type TKey } from '@/i18n';
 import type { SetId } from '@/types';
 import { activeFilterCount, matchPreset, MIN_SAMPLE_RANGE, presetRange, type DatePreset, type StatsFilterState } from './filterState';
@@ -27,6 +28,7 @@ export function StatsFilterBar({ value, onChange }: StatsFilterBarProps) {
   const count = activeFilterCount(value);
   const expanded = wide || open;
   const preset = matchPreset(value);
+  const { isAdmin } = useAuth();
 
   const patch = (p: Partial<StatsFilterState>) => onChange({ ...value, ...p });
   const toggleSet = (id: SetId) => patch({ sets: value.sets.includes(id) ? value.sets.filter((x) => x !== id) : [...value.sets, id] });
@@ -127,7 +129,9 @@ export function StatsFilterBar({ value, onChange }: StatsFilterBarProps) {
               onChange={(e) => patch({ minSample: Number(e.target.value) })}
               aria-valuetext={t('common.game.games', { count: value.minSample })}
             />
-            <Checkbox label={t('stats.filter.includeTestData')} checked={value.includeTestData} onChange={(includeTestData) => patch({ includeTestData })} className={s.check} />
+            {isAdmin ? (
+              <Checkbox label={t('stats.filter.includeTestData')} checked={value.includeTestData} onChange={(includeTestData) => patch({ includeTestData })} className={s.check} />
+            ) : null}
           </div>
         </div>
       ) : null}

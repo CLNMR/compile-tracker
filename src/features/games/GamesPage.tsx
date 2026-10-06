@@ -39,7 +39,7 @@ export default function GamesPage() {
   const hasPendingWrites = useGamesStore((st) => st.hasPendingWrites);
   const fromCache = useGamesStore((st) => st.fromCache);
 
-  const { isAnonymous } = useAuth();
+  const { isAnonymous, isAdmin } = useAuth();
   const [storedScope, setScopeState] = useState<Scope>(() => {
     const v = readStorage('local', SCOPE_KEY);
     return isScope(v) ? v : 'mine';
@@ -143,7 +143,8 @@ export default function GamesPage() {
         {scope === 'mine' ? <Select label={t('games.list.filters.player')} value={playerId} onChange={setPlayerId} options={playerOptions} /> : null}
         <Select label={t('games.list.filters.protocol')} value={protocolId} onChange={setProtocolId} options={protocolOptions} />
         <Select label={t('games.list.filters.set')} value={setId} onChange={setSetId} options={setOptions} />
-        <Checkbox className={s.check} label={t('games.list.filters.includeTestData')} checked={includeTest} onChange={setIncludeTest} />
+        {/* only admins have test data (the source drops it for everyone else) */}
+        {isAdmin ? <Checkbox className={s.check} label={t('games.list.filters.includeTestData')} checked={includeTest} onChange={setIncludeTest} /> : null}
       </div>
 
       {!ready ? (

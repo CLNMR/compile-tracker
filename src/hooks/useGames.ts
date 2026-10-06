@@ -27,9 +27,23 @@ function selectMine(...inputs: MineInputs): GameDoc[] {
   return lastMine;
 }
 
+const withoutTestData = new WeakMap<GameDoc[], GameDoc[]>();
+
+/** Test data is for admins (only they can generate it); everyone else never sees it. Stable per store array. */
+function realGames(all: GameDoc[]): GameDoc[] {
+  let out = withoutTestData.get(all);
+  if (!out) {
+    out = all.some((g) => g.isTestData) ? all.filter((g) => !g.isTestData) : all;
+    withoutTestData.set(all, out);
+  }
+  return out;
+}
+
 /** The games array that stats and lists of `scope` are computed from (`myUid` defaults to the signed-in user). */
 export function useScopedSource(scope: Scope, myUid?: string): GameDoc[] {
-  const all = useGamesStore((s) => s.games);
+  const isAdmin = useAuthStore((s) => s.isAdmin);
+  const stored = useGamesStore((s) => s.games);
+  const all = isAdmin ? stored : realGames(stored);
   const authUid = useAuthStore((s) => s.uid);
   const uid = myUid ?? authUid;
   const offers = useOffersStore((s) => s.offers);

@@ -126,6 +126,7 @@ try {
   await page.waitForTimeout(800);
   await shot('08-games');
   if (await page.getByRole('radio', { name: /^mine$/i }).count()) problems.push('guest: Mine/All toggle visible on games');
+  if (await page.getByText(/include test data/i).count()) problems.push('guest: test-data checkbox visible on games');
   if (!(await page.getByText(/Alpha/).count())) problems.push('games: guest game not listed as Alpha');
   const protoFilter = page.getByRole('combobox', { name: /protocol/i }).first();
   if (await protoFilter.count()) {

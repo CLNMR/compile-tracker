@@ -4,6 +4,7 @@ import { act, renderHook } from '@testing-library/react';
 // Keep the Firebase SDK out of the test process; the store module imports the repo which imports the app.
 vi.mock('@/firebase/app', () => ({ app: {}, auth: {}, db: {}, useEmulators: false, ADMIN_UIDS: [] }));
 
+import { useAuthStore } from '@/store/authStore';
 import { useGamesStore } from '@/store/gamesStore';
 import { computeStats, useStats } from './useStats';
 import type { StatsFilter } from './filters';
@@ -30,6 +31,16 @@ describe('computeStats', () => {
 describe('useStats', () => {
   beforeEach(() => {
     useGamesStore.setState({ games: [...FIXTURE_GAMES], loading: false, fromCache: false, ready: true });
+    useAuthStore.setState({ isAdmin: true });
+  });
+
+  it('hides test data from non-admins, whatever the filter says', () => {
+    useAuthStore.setState({ isAdmin: false });
+    const { result } = renderHook(() => useStats({ ...base, includeTestData: true }));
+    expect(result.current.games.map((g) => g.id)).not.toContain('G3');
+    expect(result.current.agg.games).toBe(3);
+    act(() => useAuthStore.setState({ isAdmin: true }));
+    expect(result.current.games.map((g) => g.id)).toContain('G3');
   });
 
   it('returns filtered games and aggregate from the store', () => {
