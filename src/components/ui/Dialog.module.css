@@ -4,8 +4,10 @@
   border: 0;
   background: transparent;
   color: var(--text);
-  width: calc(100vw - 32px);
-  max-height: calc(100dvh - 32px);
+  /* keep clear of the notch / home indicator (viewport-fit=cover) */
+  inset: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+  width: calc(100vw - var(--safe-left) - var(--safe-right) - 32px);
+  max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 32px);
   margin: auto;
   overflow: visible;
 }
@@ -23,7 +25,7 @@
   position: relative;
   display: grid;
   grid-template-rows: auto 1fr auto;
-  max-height: calc(100dvh - 32px);
+  max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 32px);
   background: var(--dlg-line);
   clip-path: polygon(
     0 0,
