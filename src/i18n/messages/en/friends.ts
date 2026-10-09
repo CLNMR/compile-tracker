@@ -14,6 +14,7 @@ export const friends = {
     copyLink: 'Copy link',
     copied: 'Friend link copied',
     claimed: 'Handle saved',
+    meCreated: 'Player “{name}” created and marked as you',
   },
   add: {
     label: 'Add a friend by handle',

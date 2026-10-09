@@ -16,6 +16,7 @@ export const friends: Shape<typeof en> = {
     copyLink: 'Link kopieren',
     copied: 'Freundes-Link kopiert',
     claimed: 'Handle gespeichert',
+    meCreated: 'Spieler „{name}“ angelegt und als du markiert',
   },
   add: {
     label: 'Freund per Handle hinzufügen',

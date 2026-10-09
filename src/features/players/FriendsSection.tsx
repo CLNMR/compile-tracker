@@ -27,7 +27,7 @@ import { useSettings } from '@/hooks/useSettings';
 import { useT } from '@/i18n';
 import { addFriend, claimHandle, HandleError, lookupHandle, removeFriend, setFriendPlayer, suggestHandle, type FriendPlayer } from '@/repo/friends';
 import { offerPastGames, withdrawPendingOffers } from '@/repo/offers';
-import { deletePlayer } from '@/repo/players';
+import { createPlayer, deletePlayer } from '@/repo/players';
 import { useFriendsStore } from '@/store/friendsStore';
 import { friendPlayerDocId, HANDLE_RE, normalizeHandle, type FriendDoc } from '@/types';
 import { friendLink } from './friendLink';
@@ -94,6 +94,8 @@ function HandleBlock({ handle }: { handle: string | null }) {
   const uid = useUid();
   const { user } = useAuth();
   const toast = useToast();
+  const { players } = usePlayers();
+  const { defaultPlayerId, setDefaultPlayerId } = useSettings();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(() => handle ?? suggestHandle(user?.displayName || user?.email));
   const [error, setError] = useState<ErrorCode | null>(null);
@@ -107,6 +109,11 @@ function HandleBlock({ handle }: { handle: string | null }) {
     try {
       const saved = await claimHandle(uid, value, handle ?? undefined);
       toast.push({ title: t('friends.handle.claimed'), description: `@${saved}`, tone: 'win' });
+      // First handle and nobody marked as "me" yet: create that player from the handle.
+      if (!handle && !players.some((p) => p.id === defaultPlayerId && !p.archived)) {
+        await setDefaultPlayerId(await createPlayer(uid, saved));
+        toast.push({ title: t('friends.handle.meCreated', { name: saved }), tone: 'win' });
+      }
       setEditing(false);
     } catch (err) {
       if (err instanceof HandleError && (err.code === 'invalid' || err.code === 'taken')) setError(err.code);
