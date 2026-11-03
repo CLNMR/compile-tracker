@@ -25,7 +25,7 @@ export const PROTOCOL_NAMES_DE: Readonly<Record<ProtocolId, string>> = {
   chaos: 'Chaos',
   clarity: 'Klarheit',
   corruption: 'Korruption',
-  courage: 'Mut',
+  courage: 'Tapferkeit',
   fear: 'Furcht',
   ice: 'Eis',
   luck: 'Glück',
@@ -50,7 +50,7 @@ export const PROTOCOL_NAMES_DE: Readonly<Record<ProtocolId, string>> = {
   // Aux 1
   love: 'Liebe',
   hate: 'Hass',
-  apathy: 'Apathie',
+  apathy: 'Gleichgültigkeit',
   // Aux 2
   diversity: 'Vielfalt',
   assimilation: 'Assimilation',
