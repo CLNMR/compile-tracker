@@ -7,6 +7,7 @@ describe('detectSource', () => {
   it('prefers the utm_source tag', () => {
     expect(detectSource({ ...base, search: '?utm_source=reddit&utm_medium=social' })).toBe('reddit');
     expect(detectSource({ ...base, search: '?utm_source=BGG' })).toBe('bgg');
+    expect(detectSource({ ...base, search: '?utm_source=poster&utm_medium=print' })).toBe('poster');
     expect(detectSource({ ...base, search: '?utm_source=pwa', standalone: true })).toBe('pwa');
     expect(detectSource({ ...base, search: '?utm_source=newsletter', referrer: 'https://www.reddit.com/' })).toBe('other');
   });

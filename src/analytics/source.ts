@@ -1,5 +1,5 @@
 /** Where a visit came from. Fixed list: the Firestore rules whitelist exactly these for the counters. */
-export const SOURCES = ['reddit', 'bgg', 'pwa', 'search', 'social', 'other', 'direct'] as const;
+export const SOURCES = ['reddit', 'bgg', 'poster', 'pwa', 'search', 'social', 'other', 'direct'] as const;
 export type Source = (typeof SOURCES)[number];
 
 /** `utm_source` values (lowercased) → source. Anything else that is tagged counts as `other`. */
@@ -7,6 +7,7 @@ const UTM_ALIASES: Readonly<Record<string, Source>> = {
   reddit: 'reddit',
   bgg: 'bgg',
   boardgamegeek: 'bgg',
+  poster: 'poster',
   pwa: 'pwa',
   homescreen: 'pwa',
 };

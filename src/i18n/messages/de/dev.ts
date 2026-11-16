@@ -131,6 +131,7 @@ export const dev: Shape<typeof en> = {
     source: {
       reddit: 'Reddit',
       bgg: 'BoardGameGeek',
+      poster: 'Poster',
       pwa: 'Installierte App',
       search: 'Suchmaschinen',
       social: 'Soziale Medien',

@@ -34,6 +34,7 @@ const SERIES = [
 const TAGGED: { source: Source; medium: string }[] = [
   { source: 'reddit', medium: 'social' },
   { source: 'bgg', medium: 'forum' },
+  { source: 'poster', medium: 'print' },
 ];
 
 const isSource = (x: string): x is Source => (SOURCES as readonly string[]).includes(x);

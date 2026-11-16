@@ -189,6 +189,7 @@ describe('analytics counters', () => {
     await assertSucceeds(bump(ALICE, 'newUser_pwa'));
     await assertSucceeds(bump(ALICE, 'game_direct'));
     await assertSucceeds(bump(ALICE, 'link_bgg'));
+    await assertSucceeds(bump(ALICE, 'visit_poster'));
     await assertFails(bump(null));
   });
 

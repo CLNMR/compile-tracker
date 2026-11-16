@@ -132,6 +132,7 @@ export const dev = {
     source: {
       reddit: 'Reddit',
       bgg: 'BoardGameGeek',
+      poster: 'Poster',
       pwa: 'Installed app',
       search: 'Search engines',
       social: 'Social media',
