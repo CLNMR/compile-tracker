@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { deriveWinner, GUEST_PLAYER_IDS, pseudonym, type GameDoc, type GameInput, type PlayerDoc, type SetId, type SideKey } from '@/types';
 import { isKnownProtocol, protocolsInSets, setsOf } from '@/data/protocols';
@@ -215,7 +215,6 @@ function Wizard({ game, guest, makeInitial }: WizardProps) {
   const { enabledSets } = useSettings();
   const editing = !!game;
   const sideBySide = useMediaQuery('(min-width: 900px)');
-  const narrow = useMediaQuery('(max-width: 419px)');
 
   const [st, setSt] = useState<WizardState>(makeInitial);
   const [saving, setSaving] = useState(false);
@@ -378,7 +377,6 @@ function Wizard({ game, guest, makeInitial }: WizardProps) {
     navigate('/games');
   };
 
-  const cardStyle = narrow ? ({ '--cw': '104px', '--ch': '146px' } as CSSProperties) : undefined;
 
   /* ---------- render ---------- */
   return (
@@ -588,7 +586,6 @@ function Wizard({ game, guest, makeInitial }: WizardProps) {
                         interactive
                         state={compiled.includes(id) ? 'compiled' : 'loading'}
                         onClick={() => (winnerOnly ? patch({ pickedWinner: side }) : toggleCompiled(side, id))}
-                        style={cardStyle}
                         title={
                           winnerOnly
                             ? t('games.new.result.cardPickWinner')

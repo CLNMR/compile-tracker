@@ -269,10 +269,21 @@
 }
 
 .cards {
+  --cards-gap: var(--space-2);
+  container-type: inline-size;
   display: flex;
   justify-content: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--cards-gap);
+}
+
+/* All three cards always share one row: on narrow phones they shrink proportionally from the 120px md card. */
+.cards.cards > * {
+  --cw: min(120px, calc((100cqw - 2 * var(--cards-gap)) / 3));
+  --ch: calc(var(--cw) * 1.4);
+  --tab-fs: calc(var(--cw) * 0.075);
+  --val-fs: calc(var(--cw) * 0.283);
+  --pad: calc(var(--cw) / 15);
+  --hex: calc(var(--cw) * 0.217);
 }
 
 /* ---- sticky footer (thumb reach) ---- */
@@ -347,6 +358,6 @@
   }
 
   .cards {
-    gap: var(--space-3);
+    --cards-gap: var(--space-3);
   }
 }
